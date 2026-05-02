@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-bg hover:bg-accent/90;
+  }
+  .btn-buy {
+    @apply btn bg-up text-bg hover:bg-up/90;
+  }
+  .btn-sell {
+    @apply btn bg-down text-bg hover:bg-down/90;
+  }
+  .btn-ghost {
+    @apply btn bg-bg-elevated text-text hover:bg-line border border-line;
+  }
+  .card {
+    @apply bg-bg-elevated border border-line rounded-xl;
+  }
+  .input {
+    @apply bg-bg-subtle border border-line rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent;
+  }
+}
