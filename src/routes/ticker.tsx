@@ -11,6 +11,8 @@ import { etMarketBounds } from '@/utils/et-bounds';
 import { QuoteHeader } from '@/components/QuoteHeader';
 import { Chart } from '@/components/Chart';
 import { OrderTicket } from '@/components/OrderTicket';
+import { StatsPanel } from '@/components/StatsPanel';
+import { NewsPanel } from '@/components/NewsPanel';
 import type { Candle } from '@/market/provider';
 
 export default function TickerRoute() {
@@ -67,13 +69,13 @@ export default function TickerRoute() {
     : `${range === '1D' ? '5-minute' : range === '1W' ? 'hourly' : range === '5Y' ? 'weekly' : 'daily'} closes · live last point`;
 
   return (
-    <div className="flex flex-col h-full pb-24 lg:pb-0">
+    <div className="flex flex-col pb-24 lg:pb-0">
       <div className="border-b border-line">
         <QuoteHeader symbol={sym} />
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_340px] flex-1">
-        <div className="p-4 flex flex-col gap-4">
+      <div className="grid lg:grid-cols-[1fr_340px]">
+        <div className="p-4 flex flex-col gap-4 min-w-0">
           <div className="card p-2">
             <Chart
               candles={candles}
@@ -86,6 +88,8 @@ export default function TickerRoute() {
             <div className="text-xs text-text-dim text-center pb-2">{subtitle}</div>
           </div>
           <LiveTicker symbol={sym} />
+          <StatsPanel symbol={sym} />
+          <NewsPanel symbol={sym} />
         </div>
         <div className="p-4 lg:border-l lg:border-line">
           <OrderTicket symbol={sym} />

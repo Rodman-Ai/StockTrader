@@ -1,4 +1,12 @@
-import type { Candle, MarketDataProvider, Profile, Quote, TickHandler } from './provider';
+import type {
+  Candle,
+  MarketDataProvider,
+  Metrics,
+  NewsItem,
+  Profile,
+  Quote,
+  TickHandler,
+} from './provider';
 
 const REST_BASE = 'https://finnhub.io/api/v1';
 const WS_BASE = 'wss://ws.finnhub.io';
@@ -131,7 +139,61 @@ export class FinnhubProvider implements MarketDataProvider {
       name: j.name ?? symbol,
       exchange: j.exchange,
       logo: j.logo,
+      industry: j.finnhubIndustry,
+      ipoDate: j.ipo,
+      weburl: j.weburl,
+      marketCap: typeof j.marketCapitalization === 'number' ? j.marketCapitalization : undefined,
+      country: j.country,
+      shareOutstanding: typeof j.shareOutstanding === 'number' ? j.shareOutstanding : undefined,
     };
+  }
+
+  async getMetrics(symbol: string): Promise<Metrics> {
+    const r = await fetch(`${REST_BASE}/stock/metric?symbol=${symbol}&metric=all&token=${apiKey()}`);
+    if (!r.ok) throw new Error(`Metrics ${symbol} failed: ${r.status}`);
+    const j = await r.json();
+    const m = j?.metric ?? {};
+    const num = (v: unknown): number | undefined =>
+      typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+    return {
+      peTTM: num(m.peBasicExclExtraTTM) ?? num(m.peNormalizedAnnualTTM),
+      epsTTM: num(m.epsInclExtraItemsTTM) ?? num(m.epsBasicExclExtraTTM) ?? num(m.epsNormalizedAnnual),
+      marketCap: num(m.marketCapitalization),
+      divYield: num(m.dividendYieldIndicatedAnnual) ?? num(m.currentDividendYieldTTM),
+      beta: num(m.beta),
+      high52w: num(m['52WeekHigh']),
+      low52w: num(m['52WeekLow']),
+      ps: num(m.psTTM),
+      pb: num(m.pbAnnual) ?? num(m.pbQuarterly),
+      avgVolume10d: num(m['10DayAverageTradingVolume']),
+    };
+  }
+
+  async getNews(symbol: string, fromMs: number, toMs: number): Promise<NewsItem[]> {
+    const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+    const r = await fetch(
+      `${REST_BASE}/company-news?symbol=${symbol}&from=${fmt(fromMs)}&to=${fmt(toMs)}&token=${apiKey()}`,
+    );
+    if (!r.ok) throw new Error(`News ${symbol} failed: ${r.status}`);
+    const j = await r.json();
+    if (!Array.isArray(j)) return [];
+    return j.map((n: {
+      id?: number;
+      datetime?: number;
+      headline?: string;
+      source?: string;
+      url?: string;
+      image?: string;
+      summary?: string;
+    }) => ({
+      id: n.id ?? `${n.datetime ?? 0}-${n.headline?.slice(0, 20) ?? ''}`,
+      ts: (n.datetime ?? 0) * 1000,
+      headline: n.headline ?? '',
+      source: n.source ?? '',
+      url: n.url ?? '',
+      image: n.image || undefined,
+      summary: n.summary || undefined,
+    }));
   }
 
   private handleMessage(raw: unknown): void {

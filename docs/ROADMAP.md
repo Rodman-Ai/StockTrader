@@ -4,7 +4,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 ## Status
 
-**Shipped (9):** #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #47 (editable watchlist), #100 (time-travel replay).
+**Shipped (12):** #4 (52w hi/lo), #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #47 (editable watchlist), #65 (per-ticker news), #66 (company profile card), #100 (time-travel replay).
 
 **Engine-ready, UI deferred:** stop / trailing-stop / bracket order types could plug straight into the existing engine.
 
@@ -14,7 +14,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 1. Symbol search box backed by Finnhub `/search`. **S** · Yahoo
 2. Pre-market and after-hours extended-hours quote line. **M** · Robinhood
 3. Live bid/ask spread under the price. **S** · Webull
-4. Day high/low and 52-week high/low. **S** · Yahoo
+4. ✅ Day high/low and 52-week high/low (52w shipped via Stats panel). **S** · Yahoo
 5. Current volume vs 30-day avg volume. **S** · Yahoo
 6. Sparkline chip on each watchlist row. **S** · Robinhood
 7. Auto-failover to mock provider on Finnhub 429. **M** · defensive
@@ -87,8 +87,8 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 64. Recently-viewed tickers list. **S** · Robinhood
 
 ### News, research & fundamentals (8)
-65. Per-ticker news feed (Finnhub `/news`). **S** · Yahoo
-66. Company profile card (sector, industry, IPO date, HQ, employees). **S** · Yahoo
+65. ✅ Per-ticker news feed (Finnhub `/company-news`). **S** · Yahoo
+66. ✅ Company profile card (sector, industry, IPO date, HQ, employees). **S** · Yahoo
 67. Income / balance-sheet / cash-flow tabs. **M** · Stock Analysis
 68. Analyst ratings panel (avg target, buy/hold/sell distribution). **M** · Webull
 69. Insider transactions log. **M** · Webull

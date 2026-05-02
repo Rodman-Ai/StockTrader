@@ -21,6 +21,35 @@ export type Profile = {
   name: string;
   exchange?: string;
   logo?: string;
+  industry?: string;
+  ipoDate?: string;
+  weburl?: string;
+  marketCap?: number;
+  country?: string;
+  shareOutstanding?: number;
+};
+
+export type Metrics = {
+  peTTM?: number;
+  epsTTM?: number;
+  marketCap?: number;
+  divYield?: number;
+  beta?: number;
+  high52w?: number;
+  low52w?: number;
+  ps?: number;
+  pb?: number;
+  avgVolume10d?: number;
+};
+
+export type NewsItem = {
+  id: number | string;
+  ts: number;
+  headline: string;
+  source: string;
+  url: string;
+  image?: string;
+  summary?: string;
 };
 
 export type TickHandler = (symbol: string, price: number, ts: number) => void;
@@ -35,4 +64,6 @@ export interface MarketDataProvider {
   getQuote(symbol: string): Promise<Quote>;
   getCandles(symbol: string, from: number, to: number, resolution?: string): Promise<Candle[]>;
   getProfile(symbol: string): Promise<Profile>;
+  getMetrics?(symbol: string): Promise<Metrics>;
+  getNews?(symbol: string, fromMs: number, toMs: number): Promise<NewsItem[]>;
 }

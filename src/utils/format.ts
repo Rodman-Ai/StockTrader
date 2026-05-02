@@ -28,6 +28,10 @@ export const fmtUsdCompact = (n: number) => usdCompact.format(n);
 export const fmtPct = (n: number) => pct.format(n);
 export const fmtNum = (n: number) => num.format(n);
 
+export const fmtMarketCapMillions = (m: number) => fmtUsdCompact(m * 1_000_000);
+export const fmtBigNum = (n: number) =>
+  new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(n);
+
 export const fmtSigned = (n: number) =>
   (n >= 0 ? '+' : '') + fmtUsd(n).replace('-', '');
 
