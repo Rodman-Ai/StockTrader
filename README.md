@@ -33,6 +33,8 @@ A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quo
 ### Charting
 - TradingView's `lightweight-charts` with **line and candlestick** views (toggle in the chart toolbar).
 - **Time-range pills** (1D / 1W / 1M / 3M / 1Y / 5Y), each mapped to an appropriate Finnhub candle resolution (5m/60m/D/W).
+- **Volume bars** below the price, color-coded green/red by candle direction.
+- **Toggleable SMA(20/50/200)** overlays in distinct colors.
 - Live last-tick is appended to the historical series (line view) or merged into the in-progress candle (candle view) so the chart "ticks" in real time.
 - Magnet crosshair, pinch-zoom, scrollable timeline.
 

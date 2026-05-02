@@ -4,7 +4,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 ## Status
 
-**Shipped (7):** #11 (time-range pills), #12 (candle/line toggle), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #47 (editable watchlist), #100 (time-travel replay).
+**Shipped (9):** #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #47 (editable watchlist), #100 (time-travel replay).
 
 **Engine-ready, UI deferred:** stop / trailing-stop / bracket order types could plug straight into the existing engine.
 
@@ -25,8 +25,8 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 ### Charting (12)
 11. ✅ Time-range pills (1D/1W/1M/3M/1Y/5Y) wired to candle resolution. **S** · Robinhood
 12. ✅ Candle/line view toggle. **M** · Webull
-13. Volume bars under the price pane. **S** · pro-app default
-14. SMA(20/50/200) overlays. **M** · Webull
+13. ✅ Volume bars under the price pane. **S** · pro-app default
+14. ✅ SMA(20/50/200) overlays. **M** · Webull
 15. EMA / RSI / MACD indicators in a sub-pane. **M** · thinkorswim
 16. Hover crosshair with date+price tooltip. **S** · TradingView
 17. Pinch-zoom and pan on touch. **M** · Robinhood
@@ -140,13 +140,13 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 By impact-per-effort against the current MVP:
 
-1. **#13** Volume bars on the chart (lightweight-charts has a histogram series — easy now).
-2. **#14** SMA(20/50/200) overlays (also easy now).
-3. **#35** Allocation donut.
-4. **#65** Per-ticker news feed (Finnhub `/news` already supported).
-5. **#28** Dollar-amount entry / fractional shares.
-6. **#50** Price-threshold alerts via Notifications API.
-7. **#57** Cmd-K universal search.
-8. **#36** Equity curve over time.
-9. **#93** Keyboard shortcuts.
-10. **#97** Settings screen + theme toggle.
+1. **#15** EMA / RSI / MACD in a sub-pane (lightweight-charts panes API is already in use).
+2. **#35** Allocation donut.
+3. **#65** Per-ticker news feed (Finnhub `/news` already supported).
+4. **#28** Dollar-amount entry / fractional shares.
+5. **#50** Price-threshold alerts via Notifications API.
+6. **#57** Cmd-K universal search.
+7. **#36** Equity curve over time.
+8. **#93** Keyboard shortcuts.
+9. **#97** Settings screen + theme toggle.
+10. **#1** Symbol search box.
