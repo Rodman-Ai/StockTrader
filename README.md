@@ -67,6 +67,22 @@ Reset to this state from the **Activity** tab → Reset.
 
 True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements. Finnhub's free tier gives realtime US-exchange trade messages, which is good enough for a demo. The footer always shows the data source and a "simulated trading" disclaimer.
 
+## Deploying to GitHub Pages
+
+The repo ships a workflow at `.github/workflows/deploy.yml` that builds and publishes to GitHub Pages on every push to `main` (and the active feature branch). Routing uses `HashRouter` so deep links like `/#/ticker/AAPL` work without a custom 404 page, and Vite's `base` is taken from the `BASE_PATH` env var (set to `/StockTrader/` by the workflow).
+
+**One-time repo setup:**
+
+1. Settings → Pages → **Build and deployment → Source: GitHub Actions**.
+2. Settings → Secrets and variables → Actions → **New repository secret**:
+   - Name: `VITE_FINNHUB_KEY`
+   - Value: your Finnhub API key
+3. Push to a watched branch (or run the workflow manually from the Actions tab).
+
+The site will be available at `https://<owner>.github.io/StockTrader/`.
+
+> Note: any `VITE_*` env var is embedded into the client bundle at build time and visible to anyone who opens the site. Finnhub's free-tier keys are rate-limited and harmless if leaked, but if you ever upgrade to a paid plan, rotate the key and treat it accordingly.
+
 ## License
 
 Demo project — no license specified. Do not use for actual trading.

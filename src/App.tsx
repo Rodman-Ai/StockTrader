@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from '@/components/AppShell';
 import { useMarketStream } from '@/hooks/useMarketStream';
@@ -23,7 +23,7 @@ function StreamBoot() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <HashRouter>
         <StreamBoot />
         <Suspense fallback={<div className="p-4 text-sm text-text-dim">Loading…</div>}>
           <Routes>
@@ -36,7 +36,7 @@ export default function App() {
             </Route>
           </Routes>
         </Suspense>
-      </BrowserRouter>
+      </HashRouter>
     </QueryClientProvider>
   );
 }

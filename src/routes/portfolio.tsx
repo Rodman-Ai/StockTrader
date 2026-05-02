@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { usePortfolio } from '@/store/usePortfolio';
 import { useMarket } from '@/store/useMarket';
 import { useSubscribeMany } from '@/hooks/useMarketStream';
@@ -62,9 +63,9 @@ export default function PortfolioRoute() {
                 key={sym}
                 className="flex items-center justify-between px-4 py-3 border-b border-line last:border-0"
               >
-                <a href={`/ticker/${sym}`} className="font-medium hover:text-accent">
+                <Link to={`/ticker/${sym}`} className="font-medium hover:text-accent">
                   {sym}
-                </a>
+                </Link>
                 <div className="text-right text-sm">
                   <div className="font-mono">{q ? fmtUsd(q.price) : '—'}</div>
                   <div className={`font-mono text-xs ${colorFor(change)}`}>
