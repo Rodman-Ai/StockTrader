@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useMarket } from '@/store/useMarket';
@@ -6,10 +6,12 @@ import { useReplay, isReplayActive } from '@/store/useReplay';
 import { useSubscribeSymbol } from '@/hooks/useMarketStream';
 import { getProvider } from '@/market/finnhub';
 import { rangeWindow, type RangeKey } from '@/market/ranges';
+import { synthesizeCandles } from '@/market/synth';
 import { etMarketBounds } from '@/utils/et-bounds';
 import { QuoteHeader } from '@/components/QuoteHeader';
 import { Chart } from '@/components/Chart';
 import { OrderTicket } from '@/components/OrderTicket';
+import type { Candle } from '@/market/provider';
 
 export default function TickerRoute() {
   const { symbol = '' } = useParams();
@@ -24,7 +26,7 @@ export default function TickerRoute() {
   const [range, setRange] = useState<RangeKey>('3M');
   const effectiveRange: RangeKey = replayActive ? '1D' : range;
 
-  const { data: candles = [], isFetching } = useQuery({
+  const { data: realCandles = [], isFetching } = useQuery({
     queryKey: ['candles', sym, effectiveRange, replayActive ? replayDate : 'live'],
     queryFn: async () => {
       try {
@@ -42,6 +44,29 @@ export default function TickerRoute() {
     staleTime: 60 * 1000,
   });
 
+  const anchorRef = useRef<number | null>(null);
+  useEffect(() => {
+    anchorRef.current = null;
+  }, [sym, effectiveRange, replayActive, replayDate]);
+  if (anchorRef.current == null && livePrice && livePrice > 0) {
+    anchorRef.current = livePrice;
+  }
+  const anchor = anchorRef.current;
+
+  const { candles, synthetic } = useMemo<{ candles: Candle[]; synthetic: boolean }>(() => {
+    if (realCandles.length > 0) return { candles: realCandles, synthetic: false };
+    if (!replayActive && anchor && anchor > 0) {
+      return { candles: synthesizeCandles(sym, anchor, effectiveRange), synthetic: true };
+    }
+    return { candles: [], synthetic: false };
+  }, [realCandles, anchor, sym, effectiveRange, replayActive]);
+
+  const subtitle = replayActive
+    ? `Replay · ${replayDate} · 1-minute closes`
+    : synthetic
+    ? `Synthetic chart data · live last point overlaid`
+    : `${range === '1D' ? '5-minute' : range === '1W' ? 'hourly' : range === '5Y' ? 'weekly' : 'daily'} closes · live last point`;
+
   return (
     <div className="flex flex-col h-full pb-24 lg:pb-0">
       <div className="border-b border-line">
@@ -57,12 +82,9 @@ export default function TickerRoute() {
               range={effectiveRange}
               onRangeChange={replayActive ? () => {} : setRange}
               loading={isFetching}
+              synthetic={synthetic}
             />
-            <div className="text-xs text-text-dim text-center pb-2">
-              {replayActive
-                ? `Replay · ${replayDate} · 1-minute closes`
-                : `${range === '1D' ? '5-minute' : range === '1W' ? 'hourly' : range === '5Y' ? 'weekly' : 'daily'} closes · live last point`}
-            </div>
+            <div className="text-xs text-text-dim text-center pb-2">{subtitle}</div>
           </div>
           <LiveTicker symbol={sym} />
         </div>

@@ -186,7 +186,7 @@ Total: **25 tests** at the time of writing. Component-level tests are deferred �
 ## Known limitations
 
 - **Bundle size**: ticker chunk is ~195 kB (63 kB gzipped) since the move from Recharts to `lightweight-charts`. Most of the remaining weight is React itself plus our own code.
-- **Finnhub free-tier intraday history** can be restricted; if so, replay and the 1D/1W chart ranges show "No chart data" for affected symbols. Daily/weekly candles are reliable.
+- **Finnhub free-tier historical candles** are restricted (`/stock/candle` is premium-only on current Finnhub policy). When the call returns empty, `src/routes/ticker.tsx` falls back to `synthesizeCandles()` from `src/market/synth.ts` — a deterministic per-symbol log-normal random walk anchored to the live price. The chart shows a "Synthetic" badge so the substitution isn't hidden. Live ticks are still real and overlay the synthesized history. Replay mode does not currently fall back to synthetic data.
 - **Single global provider singleton** — fine for one demo user; would need scoping if we ever multi-tenant.
 - **Replay state is intentionally transient** — a page reload returns to live mode. Adding `persist` would be a few lines if needed.
 

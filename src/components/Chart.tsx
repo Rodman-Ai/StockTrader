@@ -25,6 +25,7 @@ type ChartProps = {
   range: RangeKey;
   onRangeChange: (r: RangeKey) => void;
   loading?: boolean;
+  synthetic?: boolean;
 };
 
 const SMA_COLORS: Record<SmaKey, string> = {
@@ -49,6 +50,7 @@ export function Chart({
   range,
   onRangeChange,
   loading,
+  synthetic,
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -254,6 +256,14 @@ export function Chart({
         {(loading || candles.length === 0) && (
           <div className="absolute inset-0 flex items-center justify-center text-text-dim text-sm pointer-events-none">
             {loading ? 'Loading chart…' : 'No chart data for this range'}
+          </div>
+        )}
+        {synthetic && candles.length > 0 && (
+          <div
+            className="absolute top-2 left-2 inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400 pointer-events-none"
+            title="Historical bars synthesized — Finnhub free plan does not include intraday history. Live price is real."
+          >
+            Synthetic
           </div>
         )}
       </div>

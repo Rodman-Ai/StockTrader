@@ -175,14 +175,15 @@ Reset to this state from the **Activity** tab → Reset demo.
 
 ## Data honesty
 
-True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements (typically $50–$200/mo). Finnhub's free tier provides realtime US-exchange trade messages — adequate for a demo, with these caveats:
+True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements (typically $50–$200/mo). Finnhub's free tier provides realtime US-exchange trade messages — adequate for the live tick — with these caveats:
 
-- Intraday historical candles (used by 1D, 1W, and replay mode) may be restricted on the free plan; if so the chart shows "No chart data" for those ranges.
-- Daily/weekly candles are reliably available.
+- **Live quotes (`/quote`) and the trade WebSocket are free** and what the demo runs on.
+- **Historical candles (`/stock/candle`) are premium-only** as of recent Finnhub policy changes. When the candle endpoint returns empty, the app falls back to a deterministic **synthetic chart** anchored to the live price (per-symbol seed, log-normal random walk). A small **"Synthetic"** badge in the chart's top-left corner makes the substitution obvious. The live tick is still real and overlays the synthesized history.
+- Replay mode also depends on intraday history; if your plan doesn't expose it, replay won't have data to play back.
 - The footer always shows the data source and a "simulated trading" disclaimer.
 - Quote staleness ≥60s is surfaced on the quote header.
 
-The `MarketDataProvider` interface in `src/market/provider.ts` makes it possible to drop in Alpaca, Polygon, or a mock provider without touching the rest of the app.
+The `MarketDataProvider` interface in `src/market/provider.ts` makes it possible to drop in Alpaca, Polygon, or a mock provider (or use a CORS proxy + Yahoo Finance) without touching the rest of the app — that's the cleaner long-term fix if you want fully real history.
 
 ---
 
