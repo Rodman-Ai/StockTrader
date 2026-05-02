@@ -1,12 +1,18 @@
+import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { PaperBadge } from './PaperBadge';
 import { BottomTabs } from './BottomTabs';
 import { Watchlist } from './Watchlist';
 import { Footer } from './Footer';
+import { ReplayBar } from './ReplayBar';
+import { ReplayDialog } from './ReplayDialog';
+import { useReplay, isReplayActive } from '@/store/useReplay';
 
 export function AppShell() {
   const location = useLocation();
   const isTicker = location.pathname.startsWith('/ticker/');
+  const replayActive = useReplay((s) => isReplayActive(s.mode));
+  const [replayOpen, setReplayOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -17,12 +23,25 @@ export function AppShell() {
           </span>
           <PaperBadge />
         </Link>
-        <nav className="hidden lg:flex items-center gap-1 text-sm">
-          <NavItem to="/">Portfolio</NavItem>
-          <NavItem to="/markets">Markets</NavItem>
-          <NavItem to="/activity">Activity</NavItem>
-        </nav>
+        <div className="flex items-center gap-3">
+          <nav className="hidden lg:flex items-center gap-1 text-sm">
+            <NavItem to="/">Portfolio</NavItem>
+            <NavItem to="/markets">Markets</NavItem>
+            <NavItem to="/activity">Activity</NavItem>
+          </nav>
+          {!replayActive && (
+            <button
+              onClick={() => setReplayOpen(true)}
+              className="btn-ghost text-xs px-3 py-1.5"
+              title="Replay a historical trading day"
+            >
+              ⟳ Replay
+            </button>
+          )}
+        </div>
       </header>
+
+      <ReplayBar />
 
       <main className="flex-1 lg:grid lg:grid-cols-[260px_1fr] xl:grid-cols-[280px_1fr]">
         <aside className="hidden lg:block border-r border-line bg-bg-elevated">
@@ -37,6 +56,7 @@ export function AppShell() {
 
       <Footer />
       <BottomTabs />
+      <ReplayDialog open={replayOpen} onClose={() => setReplayOpen(false)} />
     </div>
   );
 }

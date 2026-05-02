@@ -10,6 +10,8 @@ type MarketState = {
   quotes: Record<string, LiveQuote>;
   setSeed: (symbol: string, prevClose: number, price: number, ts: number) => void;
   setTick: (symbol: string, price: number, ts: number) => void;
+  setReplayTick: (symbol: string, price: number, prevClose: number, ts: number) => void;
+  clearAll: () => void;
   prices: () => Record<string, number>;
 };
 
@@ -45,6 +47,14 @@ export const useMarket = create<MarketState>((set, get) => ({
         },
       };
     }),
+  setReplayTick: (symbol, price, prevClose, ts) =>
+    set((s) => ({
+      quotes: {
+        ...s.quotes,
+        [symbol]: { price, prevClose, ts },
+      },
+    })),
+  clearAll: () => set({ quotes: {} }),
   prices: () => {
     const out: Record<string, number> = {};
     for (const [s, q] of Object.entries(get().quotes)) out[s] = q.price;

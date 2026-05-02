@@ -4,14 +4,22 @@ import { placeOrder, tryFillOpenOrders } from '@/broker/engine';
 import { applyTrade } from '@/broker/portfolio';
 import { buildSeedPortfolio, SEED_VERSION } from '@/broker/seed';
 import type { PlaceOrderInput, PlaceOrderResult, Portfolio } from '@/broker/types';
+import { useReplay } from './useReplay';
+
+function nowOrSim(explicit: number | undefined): number {
+  if (explicit != null) return explicit;
+  const r = useReplay.getState();
+  if (r.mode === 'playing' || r.mode === 'paused' || r.mode === 'ended') return r.clock;
+  return Date.now();
+}
 
 type PortfolioState = {
   seedVersion: number;
   portfolio: Portfolio;
   reset: () => void;
-  submitOrder: (input: PlaceOrderInput, lastPrice: number) => PlaceOrderResult;
+  submitOrder: (input: PlaceOrderInput, lastPrice: number, now?: number) => PlaceOrderResult;
   cancelOrder: (orderId: string) => void;
-  onTick: (lastPrices: Record<string, number>) => void;
+  onTick: (lastPrices: Record<string, number>, now?: number) => void;
 };
 
 export const usePortfolio = create<PortfolioState>()(
@@ -21,8 +29,8 @@ export const usePortfolio = create<PortfolioState>()(
       portfolio: buildSeedPortfolio(),
       reset: () =>
         set({ seedVersion: SEED_VERSION, portfolio: buildSeedPortfolio() }),
-      submitOrder: (input, lastPrice) => {
-        const result = placeOrder(get().portfolio, input, lastPrice);
+      submitOrder: (input, lastPrice, now) => {
+        const result = placeOrder(get().portfolio, input, lastPrice, nowOrSim(now));
         if (!result.ok) return result;
         let next = get().portfolio;
         if (result.trade) {
@@ -40,10 +48,10 @@ export const usePortfolio = create<PortfolioState>()(
             openOrders: s.portfolio.openOrders.filter((o) => o.id !== orderId),
           },
         })),
-      onTick: (lastPrices) => {
+      onTick: (lastPrices, now) => {
         const cur = get().portfolio;
         if (cur.openOrders.length === 0) return;
-        const next = tryFillOpenOrders(cur, lastPrices);
+        const next = tryFillOpenOrders(cur, lastPrices, now);
         if (next !== cur) set({ portfolio: next });
       },
     }),

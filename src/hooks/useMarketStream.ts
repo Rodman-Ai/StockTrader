@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { getProvider } from '@/market/finnhub';
 import { useMarket } from '@/store/useMarket';
 import { usePortfolio } from '@/store/usePortfolio';
+import { useReplay } from '@/store/useReplay';
+import { replayEngine } from '@/replay/engine';
 
 let started = false;
 
@@ -11,12 +13,14 @@ export function useMarketStream() {
     started = true;
 
     const provider = getProvider();
-    const setTick = useMarket.getState().setTick;
-    const onTick = usePortfolio.getState().onTick;
 
     const unsub = provider.onTick((symbol, price, ts) => {
-      setTick(symbol, price, ts);
-      onTick({ ...useMarket.getState().prices(), [symbol]: price });
+      if (replayEngine.isActive()) return;
+      useMarket.getState().setTick(symbol, price, ts);
+      usePortfolio.getState().onTick({
+        ...useMarket.getState().prices(),
+        [symbol]: price,
+      });
     });
 
     provider.connect().catch((err) => {
@@ -30,8 +34,13 @@ export function useMarketStream() {
 }
 
 export function useSubscribeSymbol(symbol: string | undefined) {
+  const replayActive = useReplay((s) => s.mode !== 'off');
   useEffect(() => {
     if (!symbol) return;
+    if (replayActive) {
+      replayEngine.subscribe(symbol);
+      return () => replayEngine.unsubscribe(symbol);
+    }
     const provider = getProvider();
     provider.subscribe(symbol);
     provider
@@ -41,12 +50,19 @@ export function useSubscribeSymbol(symbol: string | undefined) {
     return () => {
       provider.unsubscribe(symbol);
     };
-  }, [symbol]);
+  }, [symbol, replayActive]);
 }
 
 export function useSubscribeMany(symbols: string[]) {
   const key = symbols.join(',');
+  const replayActive = useReplay((s) => s.mode !== 'off');
   useEffect(() => {
+    if (replayActive) {
+      for (const s of symbols) replayEngine.subscribe(s);
+      return () => {
+        for (const s of symbols) replayEngine.unsubscribe(s);
+      };
+    }
     const provider = getProvider();
     for (const s of symbols) {
       provider.subscribe(s);
@@ -59,5 +75,5 @@ export function useSubscribeMany(symbols: string[]) {
       for (const s of symbols) provider.unsubscribe(s);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, replayActive]);
 }
