@@ -1,27 +1,60 @@
 # StockTrader
 
-A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quotes, simulated buy/sell orders, and a synthetic portfolio so you can play around without a real broker account.
+A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quotes, simulated market and limit orders, a synthetic $100,000 portfolio, and a time-travel replay mode that streams a historical day's 1-minute bars as if they were live.
 
 > **Simulated trading — no real money. Not investment advice.**
 
-## What it does
+**Live demo:** https://rodman-ai.github.io/StockTrader/
 
-- Connects to **Finnhub**'s free realtime trade WebSocket for live US equity quotes.
-- Lets you place **market orders** (buy/sell) against a synthetic $100,000 paper account.
-- Tracks holdings, average cost, unrealized P/L, and trade history.
-- Persists everything in `localStorage` — close the tab, reopen, your account is still there.
-- Installable as a **PWA**: works on desktop browsers and adds to home screen on iOS/Android.
-- Responsive layout: three-pane on desktop (≥1024px), stacked + bottom tab bar on mobile.
+---
 
-## Stack
+## Features
 
-Vite · React 18 · TypeScript · Tailwind CSS · Zustand (with `persist`) · TanStack Query · Recharts · `vite-plugin-pwa`.
+### Trading
+- **Live quotes** via Finnhub's realtime trade WebSocket (US exchanges).
+- **Market orders** with a small synthetic slippage (~2 bps).
+- **Limit orders** that rest in an open-orders book and fill when the price crosses.
+- **Preview-then-confirm** on every order with explicit cost/share/cash readouts.
+- **Open-orders panel** with one-click cancel.
+- Insufficient-cash and insufficient-shares guards block submission with a clear reason.
 
-No backend. The "broker" is a deterministic local module in `src/broker/`.
+### Portfolio
+- Total equity, cash, positions value, and unrealized P/L tiles.
+- Positions table with live mark-to-market value and per-position P/L (% and $).
+- **Synthetic seed** on first run: $100k cash, 5 backdated holdings, ~20 prior trades.
+- Trade history with timestamps; reset button to restore the seed.
+- Persisted across reloads via Zustand's `localStorage` middleware.
 
-## Getting started
+### Watchlist
+- Editable sidebar list, persisted locally.
+- Add tickers via the input at the top; remove via hover-to-reveal × per row.
+- Live-quote display with 1-day % change.
 
-You'll need a free Finnhub API key (https://finnhub.io/dashboard).
+### Charting
+- Daily-close area chart with **time-range pills** (1D / 1W / 1M / 3M / 1Y / 5Y).
+- Each pill maps to an appropriate Finnhub candle resolution (5m/60m/D/W).
+- Live last-tick is appended to the historical series so the chart "ticks" in real time.
+
+### Time-travel replay (the headline trick)
+- Pick any historical trading day and replay it at **1× / 10× / 60×** speed.
+- The engine fetches that day's 1-minute candles for held + watchlist symbols and emits them as ticks against a simulated clock.
+- Limit orders fill against historical prices.
+- The trade history records the **historical timestamp** for orders placed during replay.
+- Live WebSocket messages are suppressed while replay is on so the simulation isn't overwritten.
+- Pause / resume / speed-switch / stop controls in a persistent bar.
+- Auto-pauses at 4 PM ET ("Day complete").
+
+### Cross-platform
+- **Responsive PWA**: three-pane layout on ≥1024px, stacked + bottom tab bar below.
+- Installable on iOS/Android home screens via the manifest.
+- Dark mode by default.
+- HashRouter so deep links work on GitHub Pages without a 404 fallback.
+
+---
+
+## Quick start
+
+You'll need a free Finnhub API key from https://finnhub.io/dashboard.
 
 ```bash
 npm install
@@ -32,25 +65,97 @@ npm run dev
 
 Open http://localhost:5173.
 
-### Other scripts
+### Scripts
 
-- `npm run build` — production build to `dist/`.
-- `npm run preview` — serve the production build locally.
-- `npm test` — run unit tests (Vitest).
-- `npm run typecheck` — TypeScript only.
+| Script | What it does |
+|---|---|
+| `npm run dev` | Vite dev server with HMR. |
+| `npm run build` | Production build to `dist/`. Honors `BASE_PATH` env. |
+| `npm run preview` | Serve the production build. |
+| `npm test` | Run Vitest unit tests (broker engine, ranges, ET bounds). |
+| `npm run typecheck` | TypeScript only, no emit. |
+
+---
+
+## Stack
+
+| Layer | Choice | Why |
+|---|---|---|
+| Build | **Vite** | Fast HMR, no SSR needed (everything is client-side). |
+| UI | **React 18 + TypeScript** | Industry standard. |
+| Styling | **Tailwind CSS** | Utility classes, dark theme, `lg:` breakpoint at 1024px. |
+| Routing | **react-router-dom** with `HashRouter` | Deep links work on GH Pages without a 404 page. |
+| State | **Zustand** with `persist` | Tiny API, idiomatic React, free localStorage. |
+| Data fetching | **TanStack Query** | Cache + retry for REST candle/profile. |
+| Charts | **Recharts** | Quick-to-ship area chart; swap candidate for `lightweight-charts`. |
+| PWA | **vite-plugin-pwa** | Manifest + service worker. |
+
+No backend. The "broker" is a deterministic local module in `src/broker/`.
+
+---
 
 ## Project layout
 
 ```
 src/
-  market/          # MarketDataProvider interface + Finnhub adapter
-  broker/          # placeOrder, fill loop, portfolio math, synthetic seed
-  store/           # Zustand stores (market quotes, portfolio)
-  components/      # AppShell, QuoteHeader, Chart, OrderTicket, etc.
-  routes/          # portfolio, markets, activity, ticker
-  hooks/           # useMarketStream, useSubscribeSymbol
-  utils/           # formatters, market-hours
+  main.tsx                  # entry
+  App.tsx                   # router + StreamBoot
+
+  market/
+    provider.ts             # MarketDataProvider interface
+    finnhub.ts              # adapter: WebSocket + REST quote/candle/profile
+    ranges.ts               # 1D…5Y → resolution + lookback
+    symbols.ts              # seeded universe + name lookup
+
+  broker/
+    types.ts                # Order, Trade, Position, Portfolio
+    engine.ts               # placeOrder, tryFillOpenOrders, slippage
+    portfolio.ts            # applyTrade, position math, equity calc
+    seed.ts                 # synthetic starting state
+
+  store/
+    useMarket.ts            # in-memory live quotes (+ replay ticks)
+    usePortfolio.ts         # persisted: cash, positions, history, openOrders
+    useWatchlist.ts         # persisted: editable symbol list
+    useReplay.ts            # transient: replay mode + sim clock
+
+  replay/
+    engine.ts               # singleton: candle fetch + interval-driven ticks
+
+  hooks/
+    useMarketStream.ts      # boots WS, gates on replay mode
+
+  components/
+    AppShell.tsx            # responsive layout, header, replay button
+    BottomTabs.tsx          # mobile tab bar
+    Chart.tsx               # Recharts area + time-range pills
+    QuoteHeader.tsx         # symbol, price, change/%
+    OrderTicket.tsx         # buy/sell, market/limit, preview modal
+    PositionsTable.tsx
+    ActivityList.tsx
+    Watchlist.tsx           # editable, with add/remove
+    PaperBadge.tsx          # toggles to "REPLAY" when active
+    ReplayBar.tsx           # persistent control strip
+    ReplayDialog.tsx        # date + speed picker
+    Footer.tsx
+
+  routes/
+    portfolio.tsx           # / — equity tiles + positions
+    markets.tsx             # /markets — symbol grid
+    activity.tsx            # /activity — open orders + history + reset
+    ticker.tsx              # /ticker/:symbol — quote, chart, ticket
+
+  utils/
+    format.ts               # Intl.NumberFormat helpers
+    market-hours.ts         # is US market open?
+    et-bounds.ts            # ET 9:30 / 16:00 timestamps for a date
+
+  styles/index.css          # Tailwind base + component classes
 ```
+
+Deeper architecture notes (data flow, order lifecycle, replay flow): see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+---
 
 ## Synthetic seed
 
@@ -61,27 +166,55 @@ On first run you start with:
 - ~20 prior trades spread over the last 90 days
 - Watchlist of 10 popular tickers
 
-Reset to this state from the **Activity** tab → Reset.
+Reset to this state from the **Activity** tab → Reset demo.
+
+---
 
 ## Data honesty
 
-True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements. Finnhub's free tier gives realtime US-exchange trade messages, which is good enough for a demo. The footer always shows the data source and a "simulated trading" disclaimer.
+True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements (typically $50–$200/mo). Finnhub's free tier provides realtime US-exchange trade messages — adequate for a demo, with these caveats:
+
+- Intraday historical candles (used by 1D, 1W, and replay mode) may be restricted on the free plan; if so the chart shows "No chart data" for those ranges.
+- Daily/weekly candles are reliably available.
+- The footer always shows the data source and a "simulated trading" disclaimer.
+- Quote staleness ≥60s is surfaced on the quote header.
+
+The `MarketDataProvider` interface in `src/market/provider.ts` makes it possible to drop in Alpaca, Polygon, or a mock provider without touching the rest of the app.
+
+---
 
 ## Deploying to GitHub Pages
 
-The repo ships a workflow at `.github/workflows/deploy.yml` that builds and publishes to GitHub Pages on every push to `main` (and the active feature branch). Routing uses `HashRouter` so deep links like `/#/ticker/AAPL` work without a custom 404 page, and Vite's `base` is taken from the `BASE_PATH` env var (set to `/StockTrader/` by the workflow).
+The repo ships `.github/workflows/deploy.yml`, which builds and publishes to GitHub Pages on every push to `main` or the active feature branch. Routing uses `HashRouter` so deep links survive direct loads. Vite's `base` is read from `BASE_PATH` (set to `/StockTrader/` by the workflow).
 
 **One-time repo setup:**
 
-1. Settings → Pages → **Build and deployment → Source: GitHub Actions**.
-2. Settings → Secrets and variables → Actions → **New repository secret**:
+1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
+2. **Settings → Secrets and variables → Actions → New repository secret**
    - Name: `VITE_FINNHUB_KEY`
    - Value: your Finnhub API key
-3. Push to a watched branch (or run the workflow manually from the Actions tab).
+3. **Settings → Environments → github-pages → Deployment branches and tags** — allow the branches you want to deploy from (or "All branches").
+4. Push, or trigger manually from the Actions tab.
 
-The site will be available at `https://<owner>.github.io/StockTrader/`.
+Site URL: `https://<owner>.github.io/StockTrader/`.
 
-> Note: any `VITE_*` env var is embedded into the client bundle at build time and visible to anyone who opens the site. Finnhub's free-tier keys are rate-limited and harmless if leaked, but if you ever upgrade to a paid plan, rotate the key and treat it accordingly.
+> Any `VITE_*` env var is embedded into the public client bundle. Finnhub free-tier keys are rate-limited and harmless if leaked, but rotate them if you ever upgrade.
+
+---
+
+## Roadmap
+
+The full 100-feature roadmap (with effort estimates and competitor origins) lives in [`docs/ROADMAP.md`](docs/ROADMAP.md). Highlights of what's still on deck:
+
+- Stop and trailing-stop orders
+- Per-ticker news feed and fundamentals tabs
+- Stock screener, sector heatmap, earnings calendar
+- Equity-curve chart over time, allocation donut by sector
+- Push notifications for price alerts
+- Keyboard shortcuts (B/S, J/K to walk the watchlist)
+- Settings screen with theme + data-source switcher
+
+---
 
 ## License
 

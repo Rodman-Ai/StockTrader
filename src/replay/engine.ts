@@ -127,6 +127,7 @@ class ReplayEngine {
           this.bounds.close + 60_000,
           '1',
         );
+        if (!this.subscribed.has(symbol)) return;
         this.candles.set(symbol, candles);
         this.prevClose.set(symbol, candles[0]?.o ?? candles[0]?.c ?? 0);
         this.cursor.set(symbol, 0);
