@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMarket } from '@/store/useMarket';
 import { usePortfolio } from '@/store/usePortfolio';
 import { fmtUsd } from '@/utils/format';
-import type { OrderSide } from '@/broker/types';
+import type { OrderSide, OrderType } from '@/broker/types';
 
 export function OrderTicket({ symbol }: { symbol: string }) {
   const quote = useMarket((s) => s.quotes[symbol]);
@@ -11,18 +11,33 @@ export function OrderTicket({ symbol }: { symbol: string }) {
   const submitOrder = usePortfolio((s) => s.submitOrder);
 
   const [side, setSide] = useState<OrderSide>('buy');
+  const [orderType, setOrderType] = useState<OrderType>('market');
   const [qtyStr, setQtyStr] = useState('1');
+  const [limitStr, setLimitStr] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   const qty = Number(qtyStr);
+  const limitPrice = Number(limitStr);
   const validQty = Number.isFinite(qty) && qty > 0;
+  const validLimit = orderType === 'market' || (Number.isFinite(limitPrice) && limitPrice > 0);
   const lastPrice = quote?.price ?? 0;
-  const estTotal = useMemo(() => (validQty ? qty * lastPrice : 0), [qty, lastPrice, validQty]);
+  const refPrice = orderType === 'limit' && validLimit ? limitPrice : lastPrice;
+  const estTotal = useMemo(
+    () => (validQty ? qty * refPrice : 0),
+    [qty, refPrice, validQty],
+  );
+
+  useEffect(() => {
+    if (orderType === 'limit' && limitStr === '' && lastPrice > 0) {
+      setLimitStr(lastPrice.toFixed(2));
+    }
+  }, [orderType, limitStr, lastPrice]);
 
   const guard = (() => {
     if (!validQty) return 'Enter a quantity.';
-    if (lastPrice <= 0) return 'Waiting for live price…';
+    if (orderType === 'limit' && !validLimit) return 'Enter a valid limit price.';
+    if (orderType === 'market' && lastPrice <= 0) return 'Waiting for live price…';
     if (side === 'buy' && estTotal > cash) return `Need ${fmtUsd(estTotal)}, have ${fmtUsd(cash)}.`;
     if (side === 'sell' && qty > heldQty) return `You hold ${heldQty} share(s).`;
     return null;
@@ -36,7 +51,13 @@ export function OrderTicket({ symbol }: { symbol: string }) {
 
   const onConfirm = () => {
     const result = submitOrder(
-      { symbol, side, type: 'market', qty },
+      {
+        symbol,
+        side,
+        type: orderType,
+        qty,
+        ...(orderType === 'limit' ? { limitPrice } : {}),
+      },
       lastPrice,
     );
     setConfirming(false);
@@ -46,7 +67,13 @@ export function OrderTicket({ symbol }: { symbol: string }) {
         text: `Filled ${result.trade.side.toUpperCase()} ${result.trade.qty} ${symbol} @ ${fmtUsd(result.trade.price)}`,
       });
       setQtyStr('1');
-    } else if (!result.ok) {
+    } else if (result.ok) {
+      setMessage({
+        kind: 'ok',
+        text: `Limit order placed — waiting to fill at ${fmtUsd(limitPrice)}`,
+      });
+      setQtyStr('1');
+    } else {
       setMessage({ kind: 'err', text: result.reason });
     }
   };
@@ -55,7 +82,7 @@ export function OrderTicket({ symbol }: { symbol: string }) {
     <div className="card p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Order ticket</h3>
-        <span className="text-xs text-text-dim">Market order · simulated</span>
+        <span className="text-xs text-text-dim">Simulated</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -73,6 +100,25 @@ export function OrderTicket({ symbol }: { symbol: string }) {
         </button>
       </div>
 
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <button
+          className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            orderType === 'market' ? 'bg-bg-subtle text-text border border-line' : 'text-text-dim hover:text-text'
+          }`}
+          onClick={() => setOrderType('market')}
+        >
+          Market
+        </button>
+        <button
+          className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+            orderType === 'limit' ? 'bg-bg-subtle text-text border border-line' : 'text-text-dim hover:text-text'
+          }`}
+          onClick={() => setOrderType('limit')}
+        >
+          Limit
+        </button>
+      </div>
+
       <label className="flex flex-col gap-1">
         <span className="text-xs text-text-dim">Quantity (shares)</span>
         <input
@@ -84,16 +130,29 @@ export function OrderTicket({ symbol }: { symbol: string }) {
         />
       </label>
 
+      {orderType === 'limit' && (
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-text-dim">Limit price ($)</span>
+          <input
+            className="input font-mono"
+            inputMode="decimal"
+            value={limitStr}
+            onChange={(e) => setLimitStr(e.target.value)}
+            placeholder="0.00"
+          />
+        </label>
+      )}
+
       <div className="text-sm flex justify-between">
-        <span className="text-text-dim">Est. price</span>
-        <span className="font-mono">{fmtUsd(lastPrice)}</span>
+        <span className="text-text-dim">{orderType === 'market' ? 'Est. price' : 'Limit price'}</span>
+        <span className="font-mono">{fmtUsd(refPrice)}</span>
       </div>
       <div className="text-sm flex justify-between">
         <span className="text-text-dim">Est. total</span>
         <span className="font-mono">{fmtUsd(estTotal)}</span>
       </div>
       <div className="text-xs text-text-dim flex justify-between">
-        <span>{side === 'buy' ? 'Cash available' : `Shares held`}</span>
+        <span>{side === 'buy' ? 'Cash available' : 'Shares held'}</span>
         <span className="font-mono">
           {side === 'buy' ? fmtUsd(cash) : `${heldQty}`}
         </span>
@@ -111,7 +170,7 @@ export function OrderTicket({ symbol }: { symbol: string }) {
         onClick={onPreview}
         disabled={!!guard}
       >
-        Preview {side}
+        Preview {side} {orderType === 'limit' ? 'limit' : ''}
       </button>
 
       {confirming && (
@@ -123,7 +182,7 @@ export function OrderTicket({ symbol }: { symbol: string }) {
             className="card p-6 max-w-sm w-full flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h4 className="font-semibold">Confirm {side}</h4>
+            <h4 className="font-semibold">Confirm {side} {orderType}</h4>
             <div className="text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-text-dim">Symbol</span>
@@ -134,12 +193,16 @@ export function OrderTicket({ symbol }: { symbol: string }) {
                 <span className="font-mono uppercase">{side}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-text-dim">Type</span>
+                <span className="font-mono uppercase">{orderType}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-text-dim">Quantity</span>
                 <span className="font-mono">{qty}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-text-dim">Est. price</span>
-                <span className="font-mono">{fmtUsd(lastPrice)}</span>
+                <span className="text-text-dim">{orderType === 'market' ? 'Est. price' : 'Limit price'}</span>
+                <span className="font-mono">{fmtUsd(refPrice)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-dim">Est. total</span>
@@ -147,7 +210,10 @@ export function OrderTicket({ symbol }: { symbol: string }) {
               </div>
             </div>
             <div className="text-xs text-text-dim">
-              Simulated fill at the last trade ± a small synthetic slippage. No real order is sent.
+              {orderType === 'market'
+                ? 'Simulated fill at the last trade ± a small synthetic slippage.'
+                : `Order rests until the price ${side === 'buy' ? 'falls to' : 'rises to'} the limit, then fills at the limit price.`}
+              {' '}No real order is sent.
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button className="btn-ghost" onClick={() => setConfirming(false)}>

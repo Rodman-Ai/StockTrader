@@ -2,20 +2,21 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { usePortfolio } from '@/store/usePortfolio';
 import { useMarket } from '@/store/useMarket';
+import { useWatchlist } from '@/store/useWatchlist';
 import { useSubscribeMany } from '@/hooks/useMarketStream';
 import { portfolioEquity } from '@/broker/portfolio';
 import { fmtPct, fmtUsd, colorFor } from '@/utils/format';
 import { PositionsTable } from '@/components/PositionsTable';
-import { SEED_WATCHLIST } from '@/broker/seed';
 
 export default function PortfolioRoute() {
   const portfolio = usePortfolio((s) => s.portfolio);
   const quotes = useMarket((s) => s.quotes);
 
+  const watchlistSymbols = useWatchlist((s) => s.symbols);
   const heldSymbols = useMemo(() => Object.keys(portfolio.positions), [portfolio.positions]);
   const subs = useMemo(
-    () => Array.from(new Set([...heldSymbols, ...SEED_WATCHLIST])),
-    [heldSymbols],
+    () => Array.from(new Set([...heldSymbols, ...watchlistSymbols])),
+    [heldSymbols, watchlistSymbols],
   );
   useSubscribeMany(subs);
 
@@ -54,7 +55,12 @@ export default function PortfolioRoute() {
           <h2 className="font-semibold">Watchlist</h2>
         </div>
         <ul>
-          {SEED_WATCHLIST.map((sym) => {
+          {watchlistSymbols.length === 0 && (
+            <li className="px-4 py-6 text-sm text-text-dim text-center">
+              No tickers in your watchlist.
+            </li>
+          )}
+          {watchlistSymbols.map((sym) => {
             const q = quotes[sym];
             const change = q ? q.price - q.prevClose : 0;
             const changePct = q && q.prevClose > 0 ? change / q.prevClose : 0;

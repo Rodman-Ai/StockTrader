@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMarket } from '@/store/useMarket';
 import { useSubscribeSymbol } from '@/hooks/useMarketStream';
 import { getProvider } from '@/market/finnhub';
+import { rangeWindow, type RangeKey } from '@/market/ranges';
 import { QuoteHeader } from '@/components/QuoteHeader';
 import { Chart } from '@/components/Chart';
 import { OrderTicket } from '@/components/OrderTicket';
@@ -14,20 +15,20 @@ export default function TickerRoute() {
   useSubscribeSymbol(sym);
 
   const livePrice = useMarket((s) => s.quotes[sym]?.price);
+  const [range, setRange] = useState<RangeKey>('3M');
 
-  const { data: candles = [] } = useQuery({
-    queryKey: ['candles', sym, '6mo'],
+  const { data: candles = [], isFetching } = useQuery({
+    queryKey: ['candles', sym, range],
     queryFn: async () => {
-      const to = Date.now();
-      const from = to - 1000 * 60 * 60 * 24 * 180;
+      const { resolution, from, to } = rangeWindow(range);
       try {
-        return await getProvider().getCandles(sym, from, to, 'D');
+        return await getProvider().getCandles(sym, from, to, resolution);
       } catch (err) {
-        console.warn(`Candles ${sym} failed`, err);
+        console.warn(`Candles ${sym} ${range} failed`, err);
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 
   return (
@@ -39,9 +40,15 @@ export default function TickerRoute() {
       <div className="grid lg:grid-cols-[1fr_340px] flex-1">
         <div className="p-4 flex flex-col gap-4">
           <div className="card p-2">
-            <Chart candles={candles} livePrice={livePrice} />
+            <Chart
+              candles={candles}
+              livePrice={livePrice}
+              range={range}
+              onRangeChange={setRange}
+              loading={isFetching}
+            />
             <div className="text-xs text-text-dim text-center pb-2">
-              Daily closes (last 6 months) · live last point
+              {range === '1D' ? '5-minute' : range === '1W' ? 'hourly' : range === '5Y' ? 'weekly' : 'daily'} closes · live last point
             </div>
           </div>
           <LiveTicker symbol={sym} />
