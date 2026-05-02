@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useMarket } from '@/store/useMarket';
 import { useReplay, isReplayActive } from '@/store/useReplay';
 import { useSubscribeSymbol } from '@/hooks/useMarketStream';
-import { getProvider } from '@/market/finnhub';
-import { rangeWindow, type RangeKey } from '@/market/ranges';
+import { type RangeKey } from '@/market/ranges';
 import { synthesizeCandles } from '@/market/synth';
+import { fetchYahooByRange, fetchYahooByWindow } from '@/market/yahoo';
 import { etMarketBounds } from '@/utils/et-bounds';
 import { QuoteHeader } from '@/components/QuoteHeader';
 import { Chart } from '@/components/Chart';
@@ -32,12 +32,11 @@ export default function TickerRoute() {
       try {
         if (replayActive) {
           const { open, close } = etMarketBounds(replayDate);
-          return await getProvider().getCandles(sym, open - 60_000, close + 60_000, '1');
+          return await fetchYahooByWindow(sym, open - 60_000, close + 60_000, '1m');
         }
-        const { resolution, from, to } = rangeWindow(effectiveRange);
-        return await getProvider().getCandles(sym, from, to, resolution);
+        return await fetchYahooByRange(sym, effectiveRange);
       } catch (err) {
-        console.warn(`Candles ${sym} ${effectiveRange} failed`, err);
+        console.warn(`Yahoo candles ${sym} ${effectiveRange} failed`, err);
         return [];
       }
     },

@@ -5,47 +5,54 @@ This document explains the moving parts in `src/`: how data flows, how orders ar
 ## Module map
 
 ```
-                                 ┌─────────────┐
-                                 │  Finnhub    │  REST + WebSocket
-                                 │   API       │
-                                 └──────┬──────┘
-                                        │
-                         ┌──────────────┴───────────────┐
-                         │   src/market/finnhub.ts      │   ← MarketDataProvider impl
-                         └──────┬───────────────┬───────┘
-                                │               │
-              live ticks ───────┘               └──── REST candles/profile
-                                │
-                ┌───────────────┴────────────────────────────┐
-                │   src/hooks/useMarketStream.ts             │
-                │   (drops live ticks while replay is on)    │
-                └───────────────┬────────────────────────────┘
-                                │
-                                │   replay path
-                ┌───────────────┴───────────────┐
-                │  src/replay/engine.ts          │   ← module singleton
-                │  setInterval → simNow()        │
-                │  emit candle.c as ticks        │
-                └───────────────┬───────────────┘
-                                │
-                ┌───────────────┴────────────────────────────────────┐
-                │   src/store/useMarket.ts        (in-memory)       │
-                │   { quotes: { [sym]: { price, prevClose, ts } } } │
-                └────────────┬───────────────────────────────────────┘
-                             │
-            ┌────────────────┴────────────────┐
-            │ Per-tick fan-out:               │
-            │  - useMarket.setTick (or replay)│
-            │  - usePortfolio.onTick(...,sim) │  ← runs limit-fill loop
-            └────────────────┬────────────────┘
-                             │
-                ┌────────────┴────────────────────┐
-                │ src/store/usePortfolio.ts        │  ← persisted to localStorage
-                │ submitOrder/cancelOrder/onTick   │
-                │   ↓ delegates to                 │
-                │ src/broker/engine.ts             │  ← pure functions
-                │   placeOrder, tryFillOpenOrders  │
-                └──────────────────────────────────┘
+        ┌─────────────┐                ┌────────────────────────┐
+        │  Finnhub    │                │  Yahoo Finance         │
+        │  WS + REST  │                │  /v8/finance/chart     │  (via CORS proxy)
+        └──────┬──────┘                └──────────┬─────────────┘
+               │                                  │
+               │ live ticks +                     │ historical bars
+               │ /quote                           │ (range or window)
+               ▼                                  ▼
+   ┌─────────────────────────┐      ┌────────────────────────────┐
+   │ src/market/finnhub.ts   │      │ src/market/yahoo.ts        │
+   │ FinnhubProvider         │      │ fetchYahooByRange/Window   │
+   └────────────┬────────────┘      └──────────┬─────────────────┘
+                │                              │
+                │                              │  (on error → fall back to)
+                │                              ▼
+                │                   ┌────────────────────────────┐
+                │                   │ src/market/synth.ts        │
+                │                   │ synthesizeCandles()        │
+                │                   └──────────┬─────────────────┘
+                │                              │
+                │   ┌───────────────────┐      │
+                │   │ src/replay/engine │◄─────┘ (1-minute window
+                │   │ setInterval ticks │         from Yahoo)
+                │   └─────────┬─────────┘
+                ▼             ▼
+      ┌──────────────────────────────────────────────────┐
+      │ src/hooks/useMarketStream.ts                     │
+      │ (drops live ticks while replay is active)        │
+      └────────────────────┬─────────────────────────────┘
+                           ▼
+        ┌──────────────────────────────────────────────────────┐
+        │ src/store/useMarket.ts        (in-memory)            │
+        │ { quotes: { [sym]: { price, prevClose, ts } } }      │
+        └────────────────────┬─────────────────────────────────┘
+                             ▼
+       ┌─────────────────────────────────────────┐
+       │ Per-tick fan-out:                       │
+       │  - useMarket.setTick / setReplayTick    │
+       │  - usePortfolio.onTick(prices, sim?)    │  ← runs limit-fill loop
+       └────────────────────┬────────────────────┘
+                            ▼
+       ┌────────────────────────────────────────┐
+       │ src/store/usePortfolio.ts              │  ← persisted to localStorage
+       │ submitOrder / cancelOrder / onTick     │
+       │   ↓ delegates to                       │
+       │ src/broker/engine.ts                   │  ← pure functions
+       │   placeOrder, tryFillOpenOrders        │
+       └────────────────────────────────────────┘
 ```
 
 ## Provider abstraction
@@ -186,7 +193,7 @@ Total: **25 tests** at the time of writing. Component-level tests are deferred �
 ## Known limitations
 
 - **Bundle size**: ticker chunk is ~195 kB (63 kB gzipped) since the move from Recharts to `lightweight-charts`. Most of the remaining weight is React itself plus our own code.
-- **Finnhub free-tier historical candles** are restricted (`/stock/candle` is premium-only on current Finnhub policy). When the call returns empty, `src/routes/ticker.tsx` falls back to `synthesizeCandles()` from `src/market/synth.ts` — a deterministic per-symbol log-normal random walk anchored to the live price. The chart shows a "Synthetic" badge so the substitution isn't hidden. Live ticks are still real and overlay the synthesized history. Replay mode does not currently fall back to synthetic data.
+- **Chart history comes from Yahoo Finance**, not Finnhub. Finnhub's `/stock/candle` is premium-only as of recent policy changes; Yahoo's `query1.finance.yahoo.com/v8/finance/chart` is free, undocumented, and CORS-blocked from the browser. We fetch through a configurable CORS proxy (`VITE_CORS_PROXY`, default `api.allorigins.win`). When Yahoo / the proxy fails, `src/routes/ticker.tsx` falls back to `synthesizeCandles()` from `src/market/synth.ts` — a deterministic per-symbol log-normal walk anchored to the live price. The chart shows an amber "Synthetic" badge so the substitution isn't hidden. See `docs/CORS-WORKER.md` for the recommended Cloudflare Worker setup. Replay mode also fetches via Yahoo; older replay dates (>~7 days) may have no 1-minute data and replay will be empty for those days.
 - **Single global provider singleton** — fine for one demo user; would need scoping if we ever multi-tenant.
 - **Replay state is intentionally transient** — a page reload returns to live mode. Adding `persist` would be a few lines if needed.
 

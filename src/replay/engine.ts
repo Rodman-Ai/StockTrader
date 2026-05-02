@@ -1,4 +1,4 @@
-import { getProvider } from '@/market/finnhub';
+import { fetchYahooByWindow } from '@/market/yahoo';
 import type { Candle } from '@/market/provider';
 import { useMarket } from '@/store/useMarket';
 import { usePortfolio } from '@/store/usePortfolio';
@@ -121,11 +121,11 @@ class ReplayEngine {
     if (existing) return existing;
     const p = (async () => {
       try {
-        const candles = await getProvider().getCandles(
+        const candles = await fetchYahooByWindow(
           symbol,
           this.bounds.open - 60_000,
           this.bounds.close + 60_000,
-          '1',
+          '1m',
         );
         if (!this.subscribed.has(symbol)) return;
         this.candles.set(symbol, candles);

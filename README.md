@@ -175,15 +175,22 @@ Reset to this state from the **Activity** tab → Reset demo.
 
 ## Data honesty
 
-True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements (typically $50–$200/mo). Finnhub's free tier provides realtime US-exchange trade messages — adequate for the live tick — with these caveats:
+Live quotes and historical candles come from two different sources:
 
-- **Live quotes (`/quote`) and the trade WebSocket are free** and what the demo runs on.
-- **Historical candles (`/stock/candle`) are premium-only** as of recent Finnhub policy changes. When the candle endpoint returns empty, the app falls back to a deterministic **synthetic chart** anchored to the live price (per-symbol seed, log-normal random walk). A small **"Synthetic"** badge in the chart's top-left corner makes the substitution obvious. The live tick is still real and overlays the synthesized history.
-- Replay mode also depends on intraday history; if your plan doesn't expose it, replay won't have data to play back.
-- The footer always shows the data source and a "simulated trading" disclaimer.
-- Quote staleness ≥60s is surfaced on the quote header.
+- **Live tick / quote: Finnhub** (free tier, realtime trade WebSocket + `/quote` REST).
+- **Historical chart bars: Yahoo Finance** (`query1.finance.yahoo.com/v8/finance/chart`) via a CORS proxy. No API key. Used by both the chart's range pills and replay mode's 1-minute history.
+- **Fallback: synthetic chart** in `src/market/synth.ts` — a deterministic per-symbol log-normal walk anchored to the live price. Triggered when Yahoo / the proxy is unreachable. A small amber "Synthetic" badge makes the substitution obvious.
 
-The `MarketDataProvider` interface in `src/market/provider.ts` makes it possible to drop in Alpaca, Polygon, or a mock provider (or use a CORS proxy + Yahoo Finance) without touching the rest of the app — that's the cleaner long-term fix if you want fully real history.
+True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements ($50–$200/mo). Finnhub's free WebSocket is adequate for the demo's live tick, and Yahoo's chart endpoint is widely used (though unofficial — they can change it without notice).
+
+### CORS proxy
+
+Yahoo doesn't send CORS headers, so the browser can't call it directly. The app uses a small proxy that forwards the request server-side and adds the missing headers.
+
+- **Default**: `https://api.allorigins.win/raw?url=` (free public proxy, fine for casual use, can be unreliable under load).
+- **Recommended for anything beyond playing around**: deploy a Cloudflare Worker (free tier, 100k req/day, no credit card). 15-line worker source + deploy steps in [`docs/CORS-WORKER.md`](docs/CORS-WORKER.md). Set `VITE_CORS_PROXY` to your worker URL.
+
+The footer always shows the data source and a "simulated trading" disclaimer. Quote staleness ≥60s is surfaced on the quote header. The `MarketDataProvider` interface in `src/market/provider.ts` makes it possible to swap to Alpaca, Polygon, or a different provider entirely without touching the rest of the app.
 
 ---
 
