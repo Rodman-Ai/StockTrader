@@ -4,7 +4,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 ## Status
 
-**Shipped (5):** #11 (time-range pills), #23 (limit orders UI), #30 (cancel open orders), #47 (editable watchlist), #100 (time-travel replay).
+**Shipped (7):** #11 (time-range pills), #12 (candle/line toggle), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #47 (editable watchlist), #100 (time-travel replay).
 
 **Engine-ready, UI deferred:** stop / trailing-stop / bracket order types could plug straight into the existing engine.
 
@@ -24,7 +24,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 ### Charting (12)
 11. ✅ Time-range pills (1D/1W/1M/3M/1Y/5Y) wired to candle resolution. **S** · Robinhood
-12. Candle/line view toggle. **M** · Webull
+12. ✅ Candle/line view toggle. **M** · Webull
 13. Volume bars under the price pane. **S** · pro-app default
 14. SMA(20/50/200) overlays. **M** · Webull
 15. EMA / RSI / MACD indicators in a sub-pane. **M** · thinkorswim
@@ -34,7 +34,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 19. Two-ticker compare overlay (% change normalized). **M** · Yahoo
 20. Per-ticker chart settings persistence. **S** · Webull
 21. Mobile full-screen chart with rotation lock. **S** · Robinhood
-22. Swap Recharts → `lightweight-charts` for true candles + perf. **M** · engineering
+22. ✅ Swap Recharts → `lightweight-charts` for true candles + perf. **M** · engineering
 
 ### Order types & ticket (12)
 23. ✅ Surface limit orders in the UI. **S** · already half-built
@@ -140,10 +140,10 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 By impact-per-effort against the current MVP:
 
-1. **#13** Volume bars on the chart.
-2. **#35** Allocation donut.
-3. **#65** Per-ticker news feed (Finnhub `/news` already supported).
-4. **#22** Swap Recharts → `lightweight-charts` (also enables proper candles + #12 + #14).
+1. **#13** Volume bars on the chart (lightweight-charts has a histogram series — easy now).
+2. **#14** SMA(20/50/200) overlays (also easy now).
+3. **#35** Allocation donut.
+4. **#65** Per-ticker news feed (Finnhub `/news` already supported).
 5. **#28** Dollar-amount entry / fractional shares.
 6. **#50** Price-threshold alerts via Notifications API.
 7. **#57** Cmd-K universal search.

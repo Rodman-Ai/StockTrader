@@ -31,9 +31,10 @@ A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quo
 - Live-quote display with 1-day % change.
 
 ### Charting
-- Daily-close area chart with **time-range pills** (1D / 1W / 1M / 3M / 1Y / 5Y).
-- Each pill maps to an appropriate Finnhub candle resolution (5m/60m/D/W).
-- Live last-tick is appended to the historical series so the chart "ticks" in real time.
+- TradingView's `lightweight-charts` with **line and candlestick** views (toggle in the chart toolbar).
+- **Time-range pills** (1D / 1W / 1M / 3M / 1Y / 5Y), each mapped to an appropriate Finnhub candle resolution (5m/60m/D/W).
+- Live last-tick is appended to the historical series (line view) or merged into the in-progress candle (candle view) so the chart "ticks" in real time.
+- Magnet crosshair, pinch-zoom, scrollable timeline.
 
 ### Time-travel replay (the headline trick)
 - Pick any historical trading day and replay it at **1× / 10× / 60×** speed.
@@ -87,7 +88,7 @@ Open http://localhost:5173.
 | Routing | **react-router-dom** with `HashRouter` | Deep links work on GH Pages without a 404 page. |
 | State | **Zustand** with `persist` | Tiny API, idiomatic React, free localStorage. |
 | Data fetching | **TanStack Query** | Cache + retry for REST candle/profile. |
-| Charts | **Recharts** | Quick-to-ship area chart; swap candidate for `lightweight-charts`. |
+| Charts | **lightweight-charts** (TradingView) | True candlesticks, sub-200 KB gzipped, fast even with 1-min replay data. |
 | PWA | **vite-plugin-pwa** | Manifest + service worker. |
 
 No backend. The "broker" is a deterministic local module in `src/broker/`.
