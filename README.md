@@ -32,11 +32,16 @@ A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quo
 
 ### Charting
 - TradingView's `lightweight-charts` with **line and candlestick** views (toggle in the chart toolbar).
-- **Time-range pills** (1D / 1W / 1M / 3M / 1Y / 5Y), each mapped to an appropriate Finnhub candle resolution (5m/60m/D/W).
+- **Time-range pills** (1D / 1W / 1M / 3M / 1Y / 5Y), each mapped to an appropriate Yahoo candle interval (5m/30m/1d/1wk).
 - **Volume bars** below the price, color-coded green/red by candle direction.
 - **Toggleable SMA(20/50/200)** overlays in distinct colors.
 - Live last-tick is appended to the historical series (line view) or merged into the in-progress candle (candle view) so the chart "ticks" in real time.
 - Magnet crosshair, pinch-zoom, scrollable timeline.
+
+### Research panels
+- **Key stats** under the chart: P/E (TTM), EPS (TTM), market cap, dividend yield, 52-week high/low, beta, P/S, P/B, 10-day average volume.
+- **Company profile strip**: exchange, country, IPO date, website link.
+- **Recent news** panel: last 14 days of headlines (up to 12) from Finnhub `/company-news`, with thumbnail, source, relative timestamp, and external link.
 
 ### Time-travel replay (the headline trick)
 - Pick any historical trading day and replay it at **1× / 10× / 60×** speed.

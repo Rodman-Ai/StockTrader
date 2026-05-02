@@ -12,7 +12,11 @@ export function StatsPanel({ symbol }: { symbol: string }) {
 
   const metricsQ = useQuery({
     queryKey: ['metrics', symbol],
-    queryFn: () => getProvider().getMetrics!(symbol),
+    queryFn: async () => {
+      const p = getProvider();
+      if (!p.getMetrics) throw new Error('Metrics not supported by provider');
+      return p.getMetrics(symbol);
+    },
     staleTime: 60 * 60 * 1000,
     retry: 0,
   });

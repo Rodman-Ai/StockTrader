@@ -13,7 +13,7 @@ class ReplayEngine {
   private clockAt = 0;
   private speed: ReplaySpeed = 10;
   private bounds: { open: number; close: number } = { open: 0, close: 0 };
-  private subscribed = new Set<string>();
+  private subRefs = new Map<string, number>();
   private candles = new Map<string, Candle[]>();
   private prevClose = new Map<string, number>();
   private cursor = new Map<string, number>();
@@ -37,10 +37,10 @@ class ReplayEngine {
     useReplay.getState().setError(null);
     useReplay.getState().setMode('loading');
 
-    for (const sym of initialSymbols) this.subscribed.add(sym);
+    for (const sym of initialSymbols) this.subRefs.set(sym, (this.subRefs.get(sym) ?? 0) + 1);
 
     try {
-      await Promise.all([...this.subscribed].map((s) => this.preload(s)));
+      await Promise.all([...this.subRefs.keys()].map((s) => this.preload(s)));
       useReplay.getState().setMode('playing');
       this.timer = window.setInterval(() => this.tick(), TICK_INTERVAL_MS);
     } catch (err) {
@@ -56,7 +56,7 @@ class ReplayEngine {
       clearInterval(this.timer);
       this.timer = null;
     }
-    this.subscribed.clear();
+    this.subRefs.clear();
     this.candles.clear();
     this.prevClose.clear();
     this.cursor.clear();
@@ -92,13 +92,16 @@ class ReplayEngine {
   }
 
   subscribe(symbol: string) {
-    if (this.subscribed.has(symbol)) return;
-    this.subscribed.add(symbol);
-    if (this.isActive()) void this.preload(symbol);
+    const next = (this.subRefs.get(symbol) ?? 0) + 1;
+    this.subRefs.set(symbol, next);
+    if (next === 1 && this.isActive()) void this.preload(symbol);
   }
 
   unsubscribe(symbol: string) {
-    this.subscribed.delete(symbol);
+    const cur = this.subRefs.get(symbol);
+    if (!cur) return;
+    if (cur <= 1) this.subRefs.delete(symbol);
+    else this.subRefs.set(symbol, cur - 1);
   }
 
   getCandles(symbol: string): Candle[] | undefined {
@@ -127,7 +130,7 @@ class ReplayEngine {
           this.bounds.close + 60_000,
           '1m',
         );
-        if (!this.subscribed.has(symbol)) return;
+        if (!this.subRefs.has(symbol)) return;
         this.candles.set(symbol, candles);
         this.prevClose.set(symbol, candles[0]?.o ?? candles[0]?.c ?? 0);
         this.cursor.set(symbol, 0);
@@ -153,7 +156,7 @@ class ReplayEngine {
     const portfolio = usePortfolio.getState();
 
     let advanced = false;
-    for (const sym of this.subscribed) {
+    for (const sym of this.subRefs.keys()) {
       const candles = this.candles.get(sym);
       if (!candles || candles.length === 0) continue;
       let i = this.cursor.get(sym) ?? 0;

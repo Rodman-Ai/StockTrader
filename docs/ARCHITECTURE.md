@@ -186,13 +186,16 @@ When replay stops, the subscribe effects re-run, the live provider re-subscribes
 |---|---|
 | `src/broker/engine.test.ts` | Slippage, market and limit fills, insufficiency rejections, applyTrade math, resting limit fills via `tryFillOpenOrders`. |
 | `src/market/ranges.test.ts` | Range-key → resolution and lookback mapping. |
+| `src/market/synth.test.ts` | Synthetic candle generator: anchoring, OHLC invariants, determinism, per-symbol distinctness. |
+| `src/market/yahoo.test.ts` | Yahoo Finance response parser: valid response, halt-bar nulls, missing/empty results. |
 | `src/utils/et-bounds.test.ts` | EDT and EST market-bounds correctness, last-weekday helper. |
+| `src/utils/indicators.test.ts` | SMA: window math, undersized input, identity for period=1, long monotonic series. |
 
-Total: **25 tests** at the time of writing. Component-level tests are deferred — the surface is small and primarily integrative.
+Total: **44 tests** at the time of writing. Component-level tests are deferred — the surface is small and primarily integrative.
 
 ## Known limitations
 
-- **Bundle size**: ticker chunk is ~195 kB (63 kB gzipped) since the move from Recharts to `lightweight-charts`. Most of the remaining weight is React itself plus our own code.
+- **Bundle size**: ticker chunk is ~207 kB (~67 kB gzipped) after Stats + News panels. Most of the remaining weight is React + lightweight-charts + our own code.
 - **Chart history comes from Yahoo Finance**, not Finnhub. Finnhub's `/stock/candle` is premium-only as of recent policy changes; Yahoo's `query1.finance.yahoo.com/v8/finance/chart` is free, undocumented, and CORS-blocked from the browser. We fetch through a configurable CORS proxy (`VITE_CORS_PROXY`, default `api.allorigins.win`). When Yahoo / the proxy fails, `src/routes/ticker.tsx` falls back to `synthesizeCandles()` from `src/market/synth.ts` — a deterministic per-symbol log-normal walk anchored to the live price. The chart shows an amber "Synthetic" badge so the substitution isn't hidden. See `docs/CORS-WORKER.md` for the recommended Cloudflare Worker setup. Replay mode also fetches via Yahoo; older replay dates (>~7 days) may have no 1-minute data and replay will be empty for those days.
 - **Single global provider singleton** — fine for one demo user; would need scoping if we ever multi-tenant.
 - **Replay state is intentionally transient** — a page reload returns to live mode. Adding `persist` would be a few lines if needed.

@@ -8,9 +8,11 @@ export function NewsPanel({ symbol }: { symbol: string }) {
   const { data: items = [], isLoading, isError } = useQuery({
     queryKey: ['news', symbol],
     queryFn: async () => {
+      const p = getProvider();
+      if (!p.getNews) throw new Error('News not supported by provider');
       const to = Date.now();
       const from = to - 14 * DAY;
-      const items = await getProvider().getNews!(symbol, from, to);
+      const items = await p.getNews(symbol, from, to);
       return items
         .filter((n) => n.headline)
         .sort((a, b) => b.ts - a.ts)
