@@ -68,8 +68,20 @@ A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quo
 - Pause / resume / speed-switch / stop controls in a persistent bar.
 - Auto-pauses at 4 PM ET ("Day complete").
 
+### Research tab
+- **Symbol search** with company-name and ticker matching against the seeded universe.
+- **Index strip** with sparklines for SPY / QQQ / DIA / IWM.
+- **Top gainers and losers** ranked from the seeded universe's live quotes.
+- **Aggregate news feed** — Yahoo Finance news combined across your held + watchlist symbols, sorted newest first, deduped.
+
+### Trade tab
+- **Quick-pick list** of held positions and watchlist symbols with live prices and a one-tap **+1 share** quick-buy button per row.
+- **Order ticket** bound to the picked symbol (market or limit).
+- **Open orders** with cancel.
+- Cash and open-order count tiles at the top.
+
 ### Cross-platform
-- **Responsive PWA**: three-pane layout on ≥1024px, stacked + bottom tab bar below.
+- **Responsive PWA**: three-pane layout on ≥1024px, stacked + 5-tab bottom bar below (Portfolio · Research · Trade · Markets · Activity).
 - Installable on iOS/Android home screens via the manifest.
 - Dark mode by default.
 - HashRouter so deep links work on GitHub Pages without a 404 fallback.

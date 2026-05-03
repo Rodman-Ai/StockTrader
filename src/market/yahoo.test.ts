@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseYahooChart } from './yahoo';
+import { parseYahooChart, parseYahooNews } from './yahoo';
 
 const sample = {
   chart: {
@@ -61,5 +61,67 @@ describe('parseYahooChart', () => {
       },
     };
     expect(parseYahooChart(j)[0].v).toBe(0);
+  });
+});
+
+describe('parseYahooNews', () => {
+  it('parses news with thumbnail and timestamp', () => {
+    const j = {
+      news: [
+        {
+          uuid: 'abc',
+          title: 'Apple beats earnings',
+          publisher: 'Reuters',
+          link: 'https://example.com/aapl',
+          providerPublishTime: 1700000000,
+          thumbnail: {
+            resolutions: [
+              { url: 'https://img/large', width: 1080, tag: 'original' },
+              { url: 'https://img/140', width: 140, tag: '140x140' },
+            ],
+          },
+          relatedTickers: ['AAPL'],
+        },
+      ],
+    };
+    const out = parseYahooNews(j);
+    expect(out.length).toBe(1);
+    expect(out[0]).toMatchObject({
+      id: 'abc',
+      ts: 1700000000000,
+      headline: 'Apple beats earnings',
+      source: 'Reuters',
+      url: 'https://example.com/aapl',
+      image: 'https://img/140',
+    });
+  });
+
+  it('skips items without title or link', () => {
+    const j = {
+      news: [
+        { title: 'no link', publisher: 'X' },
+        { link: 'https://x', publisher: 'X' },
+        { title: 'good', link: 'https://y', publisher: 'X' },
+      ],
+    };
+    expect(parseYahooNews(j).length).toBe(1);
+  });
+
+  it('falls back to first available thumbnail when no 140x140', () => {
+    const j = {
+      news: [
+        {
+          title: 't',
+          link: 'https://x',
+          thumbnail: { resolutions: [{ url: 'https://img/200', width: 200 }] },
+        },
+      ],
+    };
+    expect(parseYahooNews(j)[0].image).toBe('https://img/200');
+  });
+
+  it('returns empty when news is missing', () => {
+    expect(parseYahooNews({})).toEqual([]);
+    expect(parseYahooNews({ news: [] })).toEqual([]);
   });
 });

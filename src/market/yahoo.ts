@@ -1,4 +1,4 @@
-import type { Candle } from './provider';
+import type { Candle, NewsItem } from './provider';
 import type { RangeKey } from './ranges';
 
 const YAHOO_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
@@ -93,4 +93,55 @@ export async function fetchYahooByWindow(
     `${YAHOO_BASE}/${encodeURIComponent(symbol)}` +
     `?period1=${p1}&period2=${p2}&interval=${interval}&includePrePost=false`;
   return fetchAndParse(url);
+}
+
+const YAHOO_SEARCH = 'https://query1.finance.yahoo.com/v1/finance/search';
+
+type YahooThumbnail = {
+  resolutions?: Array<{ url?: string; width?: number; height?: number; tag?: string }>;
+};
+
+type YahooNewsRaw = {
+  uuid?: string;
+  title?: string;
+  publisher?: string;
+  link?: string;
+  providerPublishTime?: number;
+  thumbnail?: YahooThumbnail;
+  relatedTickers?: string[];
+};
+
+export type YahooSearchResponse = {
+  news?: YahooNewsRaw[];
+};
+
+export function parseYahooNews(json: YahooSearchResponse): NewsItem[] {
+  const list = json?.news;
+  if (!Array.isArray(list)) return [];
+  const out: NewsItem[] = [];
+  for (const n of list) {
+    if (!n.title || !n.link) continue;
+    const thumbs = n.thumbnail?.resolutions ?? [];
+    const image =
+      thumbs.find((t) => t.tag === '140x140')?.url ??
+      thumbs.find((t) => t.width && t.width >= 100 && t.width <= 320)?.url ??
+      thumbs[0]?.url;
+    out.push({
+      id: n.uuid ?? `${n.providerPublishTime ?? 0}-${n.title.slice(0, 20)}`,
+      ts: (n.providerPublishTime ?? 0) * 1000,
+      headline: n.title,
+      source: n.publisher ?? '',
+      url: n.link,
+      image: image || undefined,
+    });
+  }
+  return out;
+}
+
+export async function fetchYahooNews(symbol: string, count = 20): Promise<NewsItem[]> {
+  const url = `${YAHOO_SEARCH}?q=${encodeURIComponent(symbol)}&newsCount=${count}&quotesCount=0&enableFuzzyQuery=false`;
+  const r = await fetch(proxied(url));
+  if (!r.ok) throw new Error(`Yahoo news ${symbol} ${r.status}`);
+  const j = (await r.json()) as YahooSearchResponse;
+  return parseYahooNews(j);
 }

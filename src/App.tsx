@@ -8,6 +8,8 @@ const PortfolioRoute = lazy(() => import('@/routes/portfolio'));
 const ActivityRoute = lazy(() => import('@/routes/activity'));
 const MarketsRoute = lazy(() => import('@/routes/markets'));
 const TickerRoute = lazy(() => import('@/routes/ticker'));
+const ResearchRoute = lazy(() => import('@/routes/research'));
+const TransactRoute = lazy(() => import('@/routes/transact'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +31,8 @@ export default function App() {
           <Routes>
             <Route element={<AppShell />}>
               <Route index element={<PortfolioRoute />} />
+              <Route path="research" element={<ResearchRoute />} />
+              <Route path="transact" element={<TransactRoute />} />
               <Route path="markets" element={<MarketsRoute />} />
               <Route path="activity" element={<ActivityRoute />} />
               <Route path="ticker/:symbol" element={<TickerRoute />} />

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { getProvider } from '@/market/finnhub';
+import { fetchYahooNews } from '@/market/yahoo';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -8,8 +9,19 @@ export function NewsPanel({ symbol }: { symbol: string }) {
   const { data: items = [], isLoading, isError } = useQuery({
     queryKey: ['news', symbol],
     queryFn: async () => {
+      try {
+        const yahoo = await fetchYahooNews(symbol, 20);
+        if (yahoo.length > 0) {
+          return yahoo
+            .filter((n) => n.headline)
+            .sort((a, b) => b.ts - a.ts)
+            .slice(0, 12);
+        }
+      } catch (err) {
+        console.warn(`Yahoo news ${symbol} failed, trying Finnhub`, err);
+      }
       const p = getProvider();
-      if (!p.getNews) throw new Error('News not supported by provider');
+      if (!p.getNews) return [];
       const to = Date.now();
       const from = to - 14 * DAY;
       const items = await p.getNews(symbol, from, to);

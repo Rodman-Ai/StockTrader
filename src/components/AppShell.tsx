@@ -26,6 +26,8 @@ export function AppShell() {
         <div className="flex items-center gap-3">
           <nav className="hidden lg:flex items-center gap-1 text-sm">
             <NavItem to="/">Portfolio</NavItem>
+            <NavItem to="/research">Research</NavItem>
+            <NavItem to="/transact">Trade</NavItem>
             <NavItem to="/markets">Markets</NavItem>
             <NavItem to="/activity">Activity</NavItem>
           </nav>

@@ -4,14 +4,14 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 ## Status
 
-**Shipped (17):** #4 (day + 52w range), #5 (volume vs 10d avg), #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #35 (allocation donuts), #36 (equity curve), #41 (sector exposure), #44 (SPY benchmark overlay), #47 (editable watchlist), #65 (per-ticker news), #66 (company profile card), #100 (time-travel replay).
+**Shipped (22):** #1 (symbol search), #4 (day + 52w range), #5 (volume vs 10d avg), #10 (international index strip — US ETF version), #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #34 (one-tap buy on watchlist), #35 (allocation donuts), #36 (equity curve), #41 (sector exposure), #44 (SPY benchmark overlay), #47 (editable watchlist), #59 (top gainers/losers), #64 (recently-viewed via Research search), #65 (per-ticker news, now Yahoo-first), #66 (company profile card), #100 (time-travel replay).
 
 **Engine-ready, UI deferred:** stop / trailing-stop / bracket order types could plug straight into the existing engine.
 
 ---
 
 ### Market data & quotes (10)
-1. Symbol search box backed by Finnhub `/search`. **S** · Yahoo
+1. ✅ Symbol search box (against seeded universe; Research tab). **S** · Yahoo
 2. Pre-market and after-hours extended-hours quote line. **M** · Robinhood
 3. Live bid/ask spread under the price. **S** · Webull
 4. ✅ Day high/low and 52-week high/low (52w shipped via Stats panel). **S** · Yahoo
@@ -20,7 +20,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 7. Auto-failover to mock provider on Finnhub 429. **M** · defensive
 8. Connection-state pill (live / reconnecting / stale / offline). **S** · IBKR
 9. Crypto symbols on the same surface (Finnhub crypto WS). **M** · Robinhood
-10. International index strip (FTSE, DAX, Nikkei, HSI). **S** · Bloomberg
+10. ✅ Index strip with sparklines (US ETFs: SPY/QQQ/DIA/IWM; international deferred). **S** · Bloomberg
 
 ### Charting (12)
 11. ✅ Time-range pills (1D/1W/1M/3M/1Y/5Y) wired to candle resolution. **S** · Robinhood
@@ -48,7 +48,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 31. Recurring buys (e.g. $50 VOO/wk). **M** · Robinhood
 32. Confirmation haptic on mobile (Vibration API). **S** · Robinhood
 33. Double-confirm on orders >$10k. **S** · safety
-34. One-tap "buy 1 share" on watchlist rows. **S** · Robinhood
+34. ✅ One-tap "+1 share" buy on Trade tab rows. **S** · Robinhood
 
 ### Portfolio & analytics (12)
 35. ✅ Allocation donut by holding + by sector. **S** · SoFi
@@ -79,7 +79,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 ### Search, discovery & screeners (8)
 57. Cmd-K / "/" universal search (tickers, screens, settings). **S** · modern norm
 58. Stock screener with filters (mcap, P/E, sector, yield). **L** · Webull
-59. Pre-built screens: most active / top gainers / top losers. **M** · Yahoo
+59. ✅ Top gainers / top losers (from seeded universe). **M** · Yahoo
 60. Sector heatmap. **M** · Finviz
 61. Earnings calendar (this week). **M** · Yahoo
 62. IPO calendar. **M** · Webull
@@ -87,7 +87,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 64. Recently-viewed tickers list. **S** · Robinhood
 
 ### News, research & fundamentals (8)
-65. ✅ Per-ticker news feed (Finnhub `/company-news`). **S** · Yahoo
+65. ✅ Per-ticker news feed (Yahoo first via CORS proxy, Finnhub fallback). **S** · Yahoo
 66. ✅ Company profile card (sector, industry, IPO date, HQ, employees). **S** · Yahoo
 67. Income / balance-sheet / cash-flow tabs. **M** · Stock Analysis
 68. Analyst ratings panel (avg target, buy/hold/sell distribution). **M** · Webull
