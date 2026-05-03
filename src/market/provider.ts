@@ -5,6 +5,9 @@ export type Quote = {
   changePct: number;
   prevClose: number;
   ts: number;
+  dayHigh?: number;
+  dayLow?: number;
+  dayOpen?: number;
 };
 
 export type Candle = {

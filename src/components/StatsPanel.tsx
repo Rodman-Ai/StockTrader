@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getProvider } from '@/market/finnhub';
+import { fetchYahooByRange } from '@/market/yahoo';
 import { fmtBigNum, fmtMarketCapMillions, fmtNum, fmtUsd } from '@/utils/format';
 
 export function StatsPanel({ symbol }: { symbol: string }) {
@@ -21,10 +22,22 @@ export function StatsPanel({ symbol }: { symbol: string }) {
     retry: 0,
   });
 
+  const sparklineQ = useQuery({
+    queryKey: ['sparkline', symbol],
+    queryFn: () => fetchYahooByRange(symbol, '1M').catch(() => []),
+    staleTime: 60 * 60 * 1000,
+    retry: 0,
+  });
+
   const profile = profileQ.data;
   const metrics = metricsQ.data;
   const loading = profileQ.isLoading || metricsQ.isLoading;
   const failed = profileQ.isError && metricsQ.isError;
+
+  const todayVol = sparklineQ.data?.[sparklineQ.data.length - 1]?.v;
+  const avgVolUnits = metrics?.avgVolume10d ? metrics.avgVolume10d * 1_000_000 : undefined;
+  const volRatio =
+    todayVol && avgVolUnits && avgVolUnits > 0 ? todayVol / avgVolUnits : undefined;
 
   const stats = [
     { label: 'P/E (TTM)', value: metrics?.peTTM, fmt: (n: number) => fmtNum(n) },
@@ -37,6 +50,11 @@ export function StatsPanel({ symbol }: { symbol: string }) {
     { label: 'P/S (TTM)', value: metrics?.ps, fmt: (n: number) => fmtNum(n) },
     { label: 'P/B', value: metrics?.pb, fmt: (n: number) => fmtNum(n) },
     { label: 'Avg vol (10d)', value: metrics?.avgVolume10d, fmt: (n: number) => `${fmtBigNum(n * 1_000_000)}` },
+    {
+      label: 'Vol vs 10d',
+      value: volRatio,
+      fmt: (n: number) => `${(n * 100).toFixed(0)}%`,
+    },
   ];
 
   return (

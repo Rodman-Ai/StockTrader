@@ -3,6 +3,7 @@ import { useMarket } from '@/store/useMarket';
 import { usePortfolio } from '@/store/usePortfolio';
 import { positionValue } from '@/broker/portfolio';
 import { fmtPct, fmtUsd, colorFor } from '@/utils/format';
+import { Sparkline } from './Sparkline';
 
 export function PositionsTable() {
   const positions = usePortfolio((s) => s.portfolio.positions);
@@ -26,6 +27,7 @@ export function PositionsTable() {
             <th className="text-right px-3 py-2 font-medium">Qty</th>
             <th className="text-right px-3 py-2 font-medium">Avg cost</th>
             <th className="text-right px-3 py-2 font-medium">Last</th>
+            <th className="text-center px-3 py-2 font-medium hidden sm:table-cell">30D</th>
             <th className="text-right px-3 py-2 font-medium">Mkt value</th>
             <th className="text-right px-3 py-2 font-medium">P/L</th>
           </tr>
@@ -44,6 +46,9 @@ export function PositionsTable() {
                 <td className="px-3 py-2 text-right font-mono">{p.qty}</td>
                 <td className="px-3 py-2 text-right font-mono">{fmtUsd(p.avgCost)}</td>
                 <td className="px-3 py-2 text-right font-mono">{fmtUsd(last)}</td>
+                <td className="px-3 py-2 hidden sm:table-cell">
+                  <div className="flex justify-center"><Sparkline symbol={p.symbol} /></div>
+                </td>
                 <td className="px-3 py-2 text-right font-mono">{fmtUsd(v.market)}</td>
                 <td className={`px-3 py-2 text-right font-mono ${colorFor(v.pl)}`}>
                   {v.pl >= 0 ? '+' : ''}{fmtUsd(v.pl).replace('-', '')}

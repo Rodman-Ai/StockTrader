@@ -100,6 +100,8 @@ export class FinnhubProvider implements MarketDataProvider {
     const price = Number(j.c);
     const prevClose = Number(j.pc);
     const change = price - prevClose;
+    const num = (v: unknown): number | undefined =>
+      typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined;
     return {
       symbol,
       price,
@@ -107,6 +109,9 @@ export class FinnhubProvider implements MarketDataProvider {
       change,
       changePct: prevClose > 0 ? change / prevClose : 0,
       ts: j.t ? j.t * 1000 : Date.now(),
+      dayHigh: num(j.h),
+      dayLow: num(j.l),
+      dayOpen: num(j.o),
     };
   }
 

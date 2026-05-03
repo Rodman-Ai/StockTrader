@@ -4,7 +4,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 ## Status
 
-**Shipped (12):** #4 (52w hi/lo), #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #47 (editable watchlist), #65 (per-ticker news), #66 (company profile card), #100 (time-travel replay).
+**Shipped (17):** #4 (day + 52w range), #5 (volume vs 10d avg), #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #35 (allocation donuts), #36 (equity curve), #41 (sector exposure), #44 (SPY benchmark overlay), #47 (editable watchlist), #65 (per-ticker news), #66 (company profile card), #100 (time-travel replay).
 
 **Engine-ready, UI deferred:** stop / trailing-stop / bracket order types could plug straight into the existing engine.
 
@@ -15,7 +15,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 2. Pre-market and after-hours extended-hours quote line. **M** · Robinhood
 3. Live bid/ask spread under the price. **S** · Webull
 4. ✅ Day high/low and 52-week high/low (52w shipped via Stats panel). **S** · Yahoo
-5. Current volume vs 30-day avg volume. **S** · Yahoo
+5. ✅ Current volume vs 30-day avg volume (10d on StatsPanel). **S** · Yahoo
 6. Sparkline chip on each watchlist row. **S** · Robinhood
 7. Auto-failover to mock provider on Finnhub 429. **M** · defensive
 8. Connection-state pill (live / reconnecting / stale / offline). **S** · IBKR
@@ -51,16 +51,16 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 34. One-tap "buy 1 share" on watchlist rows. **S** · Robinhood
 
 ### Portfolio & analytics (12)
-35. Allocation donut by holding + by sector. **S** · SoFi
-36. Equity-curve chart over time (snapshot daily). **M** · Public
+35. ✅ Allocation donut by holding + by sector. **S** · SoFi
+36. ✅ Equity-curve chart over time (snapshot daily) + drawdown sub-pane. **M** · Public
 37. Realized vs unrealized P/L split. **S** · IBKR
 38. Cost-basis lots view (FIFO/LIFO/specific). **L** · Fidelity
 39. Day-P/L vs total-P/L toggle. **S** · Webull
 40. Simulated dividend payouts on a schedule. **M** · SoFi
-41. Sector / country exposure bars. **S** · SoFi
+41. ✅ Sector exposure bars + by-sector allocation donut. **S** · SoFi
 42. Concentration & beta risk score. **M** · Wealthfront
 43. "Pies" — bucket holdings with target weights and rebalance hints. **L** · Trading 212
-44. SPY-benchmark line overlaid on equity curve. **S** · Public
+44. ✅ SPY-benchmark line overlaid on equity curve. **S** · Public
 45. Short-term vs long-term tax-lot tagging on realized gains. **M** · Fidelity
 46. CSV export of holdings + trades. **S** · Fidelity
 

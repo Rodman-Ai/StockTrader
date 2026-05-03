@@ -45,7 +45,13 @@ export function useSubscribeSymbol(symbol: string | undefined) {
     provider.subscribe(symbol);
     provider
       .getQuote(symbol)
-      .then((q) => useMarket.getState().setSeed(symbol, q.prevClose, q.price, q.ts))
+      .then((q) =>
+        useMarket.getState().setSeed(symbol, q.prevClose, q.price, q.ts, {
+          dayHigh: q.dayHigh,
+          dayLow: q.dayLow,
+          dayOpen: q.dayOpen,
+        }),
+      )
       .catch((err) => console.warn(`Initial quote for ${symbol} failed:`, err));
     return () => {
       provider.unsubscribe(symbol);
@@ -68,7 +74,13 @@ export function useSubscribeMany(symbols: string[]) {
       provider.subscribe(s);
       provider
         .getQuote(s)
-        .then((q) => useMarket.getState().setSeed(s, q.prevClose, q.price, q.ts))
+        .then((q) =>
+          useMarket.getState().setSeed(s, q.prevClose, q.price, q.ts, {
+            dayHigh: q.dayHigh,
+            dayLow: q.dayLow,
+            dayOpen: q.dayOpen,
+          }),
+        )
         .catch(() => {});
     }
     return () => {

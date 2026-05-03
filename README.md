@@ -38,10 +38,26 @@ A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quo
 - Live last-tick is appended to the historical series (line view) or merged into the in-progress candle (candle view) so the chart "ticks" in real time.
 - Magnet crosshair, pinch-zoom, scrollable timeline.
 
+### Quote header
+- Current price, change, change %.
+- **Day range and open** (today's high/low/open from Finnhub `/quote`).
+- **52-week range bar** with a marker for where the current price sits between the 52w low and high.
+- "Stale" pill when no tick has arrived in 60+ seconds.
+
 ### Research panels
-- **Key stats** under the chart: P/E (TTM), EPS (TTM), market cap, dividend yield, 52-week high/low, beta, P/S, P/B, 10-day average volume.
+- **Key stats** under the chart: P/E (TTM), EPS (TTM), market cap, dividend yield, 52-week high/low, beta, P/S, P/B, 10-day average volume, current volume vs 10-day average.
 - **Company profile strip**: exchange, country, IPO date, website link.
 - **Recent news** panel: last 14 days of headlines (up to 12) from Finnhub `/company-news`, with thumbnail, source, relative timestamp, and external link.
+
+### Portfolio analytics
+- **Equity curve** of total account value over time (synthetic backfill on first run, real snapshots from there forward), with **SPY benchmark overlay** normalized to your starting equity.
+- **Drawdown sub-pane** below the equity curve plus tiles for max drawdown, current drawdown, and drawdown duration.
+- **Allocation donuts** — by holding and by sector, side by side.
+- **Sector exposure** stacked bar with a labeled legend.
+- **Positions table** gets a 30-day **sparkline** column per holding.
+
+### Performance stats
+- **Trade performance tiles** on the Activity page: realized P/L, win rate, average win, average loss, profit factor — derived from FIFO-matched round-trips in your trade history.
 
 ### Time-travel replay (the headline trick)
 - Pick any historical trading day and replay it at **1× / 10× / 60×** speed.

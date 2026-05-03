@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { usePortfolio } from '@/store/usePortfolio';
 import { ActivityList } from '@/components/ActivityList';
+import { PerformanceTiles } from '@/components/PerformanceTiles';
 import { fmtUsd } from '@/utils/format';
 
 export default function ActivityRoute() {
@@ -12,6 +13,7 @@ export default function ActivityRoute() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      <PerformanceTiles />
       {openOrders.length > 0 && (
         <div className="card overflow-hidden">
           <div className="px-4 py-3 border-b border-line flex items-center justify-between">
