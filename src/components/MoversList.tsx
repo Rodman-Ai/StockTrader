@@ -2,17 +2,17 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '@/store/useMarket';
 import { useSubscribeMany } from '@/hooks/useMarketStream';
-import { SEEDED_SYMBOLS, symbolName } from '@/market/symbols';
+import { POPULAR_SYMBOLS, symbolName } from '@/market/symbols';
 import { fmtPct, fmtUsd, colorFor } from '@/utils/format';
 
 const TOP_N = 6;
 
 export function MoversList() {
-  useSubscribeMany(SEEDED_SYMBOLS);
+  useSubscribeMany(POPULAR_SYMBOLS);
   const quotes = useMarket((s) => s.quotes);
 
   const ranked = useMemo(() => {
-    const rows = SEEDED_SYMBOLS.map((sym) => {
+    const rows = POPULAR_SYMBOLS.map((sym) => {
       const q = quotes[sym];
       if (!q || !(q.prevClose > 0)) return null;
       const change = q.price - q.prevClose;

@@ -1,3 +1,9 @@
+export const POPULAR_SYMBOLS = [
+  'SPY', 'QQQ', 'DIA', 'IWM',
+  'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AMD',
+  'AVGO', 'NFLX', 'COST', 'JPM', 'V', 'WMT', 'XOM', 'JNJ',
+];
+
 export const SEEDED_SYMBOLS = [
   'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AMD', 'NFLX',
   'AVGO', 'ORCL', 'CRM', 'ADBE', 'INTC', 'QCOM', 'CSCO', 'TXN', 'IBM',

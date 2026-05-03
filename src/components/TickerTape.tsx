@@ -1,13 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useMarket } from '@/store/useMarket';
 import { useSubscribeMany } from '@/hooks/useMarketStream';
+import { POPULAR_SYMBOLS } from '@/market/symbols';
 import { fmtPct, fmtUsd, colorFor } from '@/utils/format';
 
-const TAPE_SYMBOLS = [
-  'SPY', 'QQQ', 'DIA', 'IWM',
-  'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AMD',
-  'JPM', 'V', 'WMT', 'XOM',
-];
+const TAPE_SYMBOLS = POPULAR_SYMBOLS;
 
 export function TickerTape() {
   useSubscribeMany(TAPE_SYMBOLS);

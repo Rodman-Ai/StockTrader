@@ -4,6 +4,30 @@ import { useMarket } from '@/store/useMarket';
 import { usePortfolio } from '@/store/usePortfolio';
 import { useReplay } from '@/store/useReplay';
 import { replayEngine } from '@/replay/engine';
+import type { MarketDataProvider } from '@/market/provider';
+
+const QUOTE_FRESH_MS = 60_000;
+const inflightQuotes = new Map<string, Promise<void>>();
+
+function seedQuoteIfStale(provider: MarketDataProvider, symbol: string): void {
+  const existing = useMarket.getState().quotes[symbol];
+  if (existing && Date.now() - existing.ts < QUOTE_FRESH_MS) return;
+  if (inflightQuotes.has(symbol)) return;
+  const p = provider
+    .getQuote(symbol)
+    .then((q) =>
+      useMarket.getState().setSeed(symbol, q.prevClose, q.price, q.ts, {
+        dayHigh: q.dayHigh,
+        dayLow: q.dayLow,
+        dayOpen: q.dayOpen,
+      }),
+    )
+    .catch((err) => console.warn(`Initial quote for ${symbol} failed:`, err))
+    .finally(() => {
+      inflightQuotes.delete(symbol);
+    });
+  inflightQuotes.set(symbol, p);
+}
 
 export function useMarketStream() {
   useEffect(() => {
@@ -38,16 +62,7 @@ export function useSubscribeSymbol(symbol: string | undefined) {
     }
     const provider = getProvider();
     provider.subscribe(symbol);
-    provider
-      .getQuote(symbol)
-      .then((q) =>
-        useMarket.getState().setSeed(symbol, q.prevClose, q.price, q.ts, {
-          dayHigh: q.dayHigh,
-          dayLow: q.dayLow,
-          dayOpen: q.dayOpen,
-        }),
-      )
-      .catch((err) => console.warn(`Initial quote for ${symbol} failed:`, err));
+    seedQuoteIfStale(provider, symbol);
     return () => {
       provider.unsubscribe(symbol);
     };
@@ -67,16 +82,7 @@ export function useSubscribeMany(symbols: string[]) {
     const provider = getProvider();
     for (const s of symbols) {
       provider.subscribe(s);
-      provider
-        .getQuote(s)
-        .then((q) =>
-          useMarket.getState().setSeed(s, q.prevClose, q.price, q.ts, {
-            dayHigh: q.dayHigh,
-            dayLow: q.dayLow,
-            dayOpen: q.dayOpen,
-          }),
-        )
-        .catch(() => {});
+      seedQuoteIfStale(provider, s);
     }
     return () => {
       for (const s of symbols) provider.unsubscribe(s);
