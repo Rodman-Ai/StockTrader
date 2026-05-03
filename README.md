@@ -182,7 +182,7 @@ src/
     PositionsTable.tsx      # holdings table with 30D sparkline column
     ActivityList.tsx
     Watchlist.tsx           # editable, with add/remove
-    PaperBadge.tsx          # toggles to "REPLAY" when active
+    PaperBadge.tsx          # green "REALTIME" chip; flips to blue "REPLAY" during time-travel
     ReplayBar.tsx           # persistent control strip
     ReplayDialog.tsx        # date + speed picker
     StatsPanel.tsx          # P/E, EPS, mkt cap, div yield, 52w hi/lo, etc.
