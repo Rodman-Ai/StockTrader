@@ -62,6 +62,14 @@ export default function TickerRoute() {
     return { candles: [], synthetic: false };
   }, [realCandles, anchor, sym, effectiveRange, replayActive]);
 
+  useEffect(() => {
+    if (synthetic) {
+      console.info(
+        `[StockTrader] ${sym} ${effectiveRange}: chart history is synthesized — Yahoo via the public CORS proxy was unreachable. Set VITE_CORS_PROXY to your own Cloudflare Worker (see docs/CORS-WORKER.md) for reliable data.`,
+      );
+    }
+  }, [synthetic, sym, effectiveRange]);
+
   const subtitle = replayActive
     ? `Replay · ${replayDate} · 1-minute closes`
     : synthetic

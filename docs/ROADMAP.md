@@ -4,7 +4,7 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 ## Status
 
-**Shipped (22):** #1 (symbol search), #4 (day + 52w range), #5 (volume vs 10d avg), #10 (international index strip — US ETF version), #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #30 (cancel open orders), #34 (one-tap buy on watchlist), #35 (allocation donuts), #36 (equity curve), #41 (sector exposure), #44 (SPY benchmark overlay), #47 (editable watchlist), #59 (top gainers/losers), #64 (recently-viewed via Research search), #65 (per-ticker news, now Yahoo-first), #66 (company profile card), #100 (time-travel replay).
+**Shipped (24):** #1 (symbol search), #4 (day + 52w range), #5 (volume vs 10d avg), #10 (international index strip — US ETF version), #11 (time-range pills), #12 (candle/line toggle), #13 (volume bars), #14 (SMA overlays), #22 (lightweight-charts swap), #23 (limit orders UI), #24 (stop / stop-limit), #27 (time-in-force: Day/GTC/IOC/FOK), #30 (cancel open orders), #34 (one-tap buy on watchlist), #35 (allocation donuts), #36 (equity curve), #41 (sector exposure), #44 (SPY benchmark overlay), #47 (editable watchlist), #59 (top gainers/losers), #64 (recently-viewed via Research search), #65 (per-ticker news, now Yahoo-first), #66 (company profile card), #100 (time-travel replay).
 
 **Engine-ready, UI deferred:** stop / trailing-stop / bracket order types could plug straight into the existing engine.
 
@@ -38,10 +38,10 @@ A competitor-driven backlog of 100 candidate features. Effort: **S** ≤ 1 day �
 
 ### Order types & ticket (12)
 23. ✅ Surface limit orders in the UI. **S** · already half-built
-24. Stop-market and stop-limit orders. **M** · IBKR
+24. ✅ Stop-market and stop-limit orders. **M** · IBKR
 25. Trailing stops (trail by % or $). **M** · IBKR
 26. Bracket orders (entry + TP + SL in one ticket). **L** · thinkorswim
-27. Time-in-force selector (Day, GTC, IOC, FOK). **M** · IBKR
+27. ✅ Time-in-force selector (Day, GTC, IOC, FOK). **M** · IBKR
 28. Dollar-amount entry → fractional share calc. **M** · Robinhood, Public
 29. Slippage estimate visible in preview modal. **S** · trust
 30. ✅ Open-orders panel with cancel/modify. **S**

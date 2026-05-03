@@ -20,10 +20,13 @@ A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quo
 
 ### Trading
 - **Live quotes** via Finnhub's realtime trade WebSocket (US exchanges).
-- **Market orders** with a small synthetic slippage (~2 bps).
-- **Limit orders** that rest in an open-orders book and fill when the price crosses.
+- **Market, Limit, Stop, and Stop-Limit** order types with a 4-segment toggle.
+- **Time in force**: Day, GTC, IOC, FOK — IOC/FOK reject if not immediately marketable; DAY orders auto-cancel on the next trading day.
+- Marketable limits fill at the better of last-or-limit (not at the limit price), matching real-broker convention.
+- Stop orders show a "Pending trigger" pill until the price crosses, then arm and fill.
 - **Preview-then-confirm** on every order with explicit cost/share/cash readouts.
-- **Open-orders panel** with one-click cancel.
+- **OpenOrdersFeed** with status pills (Working / Pending trigger / Triggered) and live distance-to-trigger updates as ticks arrive.
+- One-click cancel on every working or pending order.
 - Insufficient-cash and insufficient-shares guards block submission with a clear reason.
 
 ### Portfolio
@@ -244,10 +247,10 @@ True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements ($50–
 
 ### CORS proxy
 
-Yahoo doesn't send CORS headers, so the browser can't call it directly. The app uses a small proxy that forwards the request server-side and adds the missing headers.
+Yahoo doesn't send CORS headers, so the browser can't call it directly. The app routes through a small proxy that forwards the request server-side.
 
-- **Default**: `https://api.allorigins.win/raw?url=` (free public proxy, fine for casual use, can be unreliable under load).
-- **Recommended for anything beyond playing around**: deploy a Cloudflare Worker (free tier, 100k req/day, no credit card). 15-line worker source + deploy steps in [`docs/CORS-WORKER.md`](docs/CORS-WORKER.md). Set `VITE_CORS_PROXY` to your worker URL.
+- **Default**: tries two free public proxies in sequence — `api.allorigins.win` first, then `api.codetabs.com` — each with an 8-second timeout before falling through to the synthetic chart fallback. Good enough for casual use; not for anything that depends on shared infrastructure being up.
+- **Recommended for production**: deploy a Cloudflare Worker (free tier, 100k req/day, no credit card). 15-line worker source + deploy steps in [`docs/CORS-WORKER.md`](docs/CORS-WORKER.md). Set `VITE_CORS_PROXY` to your worker URL — when set, only that proxy is used (no public fallback).
 
 The footer always shows the data source and a "simulated trading" disclaimer. Quote staleness ≥60s is surfaced on the quote header. The `MarketDataProvider` interface in `src/market/provider.ts` makes it possible to swap to Alpaca, Polygon, or a different provider entirely without touching the rest of the app.
 

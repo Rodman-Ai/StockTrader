@@ -6,10 +6,16 @@ CORS headers, so a browser can't call it directly — it needs a tiny proxy that
 forwards the request server-side and adds the `Access-Control-Allow-Origin`
 header.
 
-By default the app uses **`https://api.allorigins.win/raw?url=`**, a free
-public proxy. That works for casual use but is shared infrastructure and can
-rate-limit or go down. The recommended upgrade is a Cloudflare Worker you
-control.
+By default the app tries two free public proxies in sequence:
+**`https://api.allorigins.win/raw?url=`** then **`https://api.codetabs.com/v1/proxy/?quest=`**,
+each with an 8-second timeout. If the first 429s, hangs, or errors, the
+second is tried before the chart falls back to synthesized history. That's
+fine for casual exploration, but both are shared free infrastructure and
+will rate-limit you if you hit them hard. The recommended upgrade for
+anything you want to be reliable is a Cloudflare Worker you control.
+
+When `VITE_CORS_PROXY` is set, only that proxy is used — the public fallbacks
+are skipped because your worker is the trusted path.
 
 ## Cost
 

@@ -2,7 +2,13 @@ import type { Candle, NewsItem } from './provider';
 import type { RangeKey } from './ranges';
 
 const YAHOO_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
-const DEFAULT_PROXY = 'https://api.allorigins.win/raw?url=';
+
+const DEFAULT_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://api.codetabs.com/v1/proxy/?quest=',
+];
+
+const PROXY_TIMEOUT_MS = 8000;
 
 const RANGE_PARAMS: Record<RangeKey, { range: string; interval: string }> = {
   '1D': { range: '1d', interval: '5m' },
@@ -13,9 +19,22 @@ const RANGE_PARAMS: Record<RangeKey, { range: string; interval: string }> = {
   '5Y': { range: '5y', interval: '1wk' },
 };
 
-function proxied(url: string): string {
-  const prefix = import.meta.env.VITE_CORS_PROXY ?? DEFAULT_PROXY;
-  return `${prefix}${encodeURIComponent(url)}`;
+async function fetchProxied(targetUrl: string): Promise<Response> {
+  const userProxy = import.meta.env.VITE_CORS_PROXY;
+  const proxies = userProxy ? [userProxy] : DEFAULT_PROXIES;
+  let lastErr: Error | undefined;
+  for (const prefix of proxies) {
+    try {
+      const r = await fetch(`${prefix}${encodeURIComponent(targetUrl)}`, {
+        signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
+      });
+      if (r.ok) return r;
+      lastErr = new Error(`${prefix}: HTTP ${r.status}`);
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw lastErr ?? new Error('All CORS proxies failed');
 }
 
 type YahooQuote = {
@@ -64,7 +83,7 @@ export function parseYahooChart(json: YahooChartResponse): Candle[] {
 }
 
 async function fetchAndParse(url: string): Promise<Candle[]> {
-  const r = await fetch(proxied(url));
+  const r = await fetchProxied(url);
   if (!r.ok) throw new Error(`Yahoo proxy returned ${r.status}`);
   const j = (await r.json()) as YahooChartResponse;
   return parseYahooChart(j);
@@ -140,7 +159,7 @@ export function parseYahooNews(json: YahooSearchResponse): NewsItem[] {
 
 export async function fetchYahooNews(symbol: string, count = 20): Promise<NewsItem[]> {
   const url = `${YAHOO_SEARCH}?q=${encodeURIComponent(symbol)}&newsCount=${count}&quotesCount=0&enableFuzzyQuery=false`;
-  const r = await fetch(proxied(url));
+  const r = await fetchProxied(url);
   if (!r.ok) throw new Error(`Yahoo news ${symbol} ${r.status}`);
   const j = (await r.json()) as YahooSearchResponse;
   return parseYahooNews(j);

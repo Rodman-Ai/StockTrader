@@ -1,6 +1,7 @@
 export type OrderSide = 'buy' | 'sell';
-export type OrderType = 'market' | 'limit';
+export type OrderType = 'market' | 'limit' | 'stop' | 'stop_limit';
 export type OrderStatus = 'open' | 'filled' | 'rejected' | 'cancelled';
+export type TimeInForce = 'DAY' | 'GTC' | 'IOC' | 'FOK';
 
 export type Order = {
   id: string;
@@ -9,6 +10,9 @@ export type Order = {
   type: OrderType;
   qty: number;
   limitPrice?: number;
+  stopPrice?: number;
+  stopTriggered?: boolean;
+  timeInForce: TimeInForce;
   status: OrderStatus;
   placedAt: number;
 };
@@ -43,6 +47,8 @@ export type PlaceOrderInput = {
   type: OrderType;
   qty: number;
   limitPrice?: number;
+  stopPrice?: number;
+  timeInForce?: TimeInForce;
 };
 
 export type PlaceOrderResult =

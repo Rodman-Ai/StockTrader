@@ -260,8 +260,8 @@ export function Chart({
         )}
         {synthetic && candles.length > 0 && (
           <div
-            className="absolute top-2 left-2 inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400 pointer-events-none"
-            title="Historical bars synthesized — Finnhub free plan does not include intraday history. Live price is real."
+            className="absolute top-2 left-2 inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400"
+            title="Yahoo Finance via the public CORS proxy was unreachable (likely rate-limited), so chart history is locally synthesized. The live price overlaid on top is real. Set VITE_CORS_PROXY to your own Cloudflare Worker for reliable history — see docs/CORS-WORKER.md."
           >
             Synthetic
           </div>
