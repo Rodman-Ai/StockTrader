@@ -10,6 +10,14 @@ A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quo
 
 ## Features
 
+### Landing page
+- Marketing-style hero at `/` with the logo, tagline, "Open the demo" CTA, and stat tiles (test count, no backend, bundle size, PWA).
+- Feature cards highlighting the realtime stream, time-travel replay, pro charting, portfolio analytics, multi-source data, and the pure-functional broker engine.
+- Tech-stack badges and an honesty-surface paragraph about the data sources.
+
+### Live ticker tape
+- CNBC-style scrolling marquee at the bottom of every in-app page with live quotes for the major US ETFs and most-watched names. Hover to pause, click any symbol to jump to its detail page.
+
 ### Trading
 - **Live quotes** via Finnhub's realtime trade WebSocket (US exchanges).
 - **Market orders** with a small synthetic slippage (~2 bps).

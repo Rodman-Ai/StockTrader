@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Logo } from './Logo';
 import { PaperBadge } from './PaperBadge';
 import { BottomTabs } from './BottomTabs';
 import { Watchlist } from './Watchlist';
 import { Footer } from './Footer';
 import { ReplayBar } from './ReplayBar';
 import { ReplayDialog } from './ReplayDialog';
+import { TickerTape } from './TickerTape';
 import { useReplay, isReplayActive } from '@/store/useReplay';
 
 export function AppShell() {
@@ -17,15 +19,16 @@ export function AppShell() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="px-4 py-3 border-b border-line flex items-center justify-between bg-bg-elevated">
-        <Link to="/" className="flex items-center gap-2 group">
-          <span className="text-lg font-bold tracking-tight group-hover:text-accent">
-            StockTrader
-          </span>
+        <Link
+          to="/portfolio"
+          className="flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-md"
+        >
+          <Logo size={26} withWordmark />
           <PaperBadge />
         </Link>
         <div className="flex items-center gap-3">
           <nav className="hidden lg:flex items-center gap-1 text-sm">
-            <NavItem to="/">Portfolio</NavItem>
+            <NavItem to="/portfolio">Portfolio</NavItem>
             <NavItem to="/research">Research</NavItem>
             <NavItem to="/transact">Trade</NavItem>
             <NavItem to="/markets">Markets</NavItem>
@@ -56,6 +59,10 @@ export function AppShell() {
         </section>
       </main>
 
+      <div className="lg:mb-0 mb-14">
+        <TickerTape />
+      </div>
+
       <Footer />
       <BottomTabs />
       <ReplayDialog open={replayOpen} onClose={() => setReplayOpen(false)} />
@@ -65,12 +72,11 @@ export function AppShell() {
 
 function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   const loc = useLocation();
-  const active =
-    to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to);
+  const active = loc.pathname.startsWith(to);
   return (
     <Link
       to={to}
-      className={`px-3 py-1.5 rounded-md ${
+      className={`px-3 py-1.5 rounded-md transition-colors ${
         active ? 'bg-bg-subtle text-text' : 'text-text-dim hover:text-text'
       }`}
     >

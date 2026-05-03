@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from '@/components/AppShell';
 import { useMarketStream } from '@/hooks/useMarketStream';
 
+const LandingRoute = lazy(() => import('@/routes/landing'));
 const PortfolioRoute = lazy(() => import('@/routes/portfolio'));
 const ActivityRoute = lazy(() => import('@/routes/activity'));
 const MarketsRoute = lazy(() => import('@/routes/markets'));
@@ -29,8 +30,9 @@ export default function App() {
         <StreamBoot />
         <Suspense fallback={<div className="p-4 text-sm text-text-dim">Loading…</div>}>
           <Routes>
+            <Route index element={<LandingRoute />} />
             <Route element={<AppShell />}>
-              <Route index element={<PortfolioRoute />} />
+              <Route path="portfolio" element={<PortfolioRoute />} />
               <Route path="research" element={<ResearchRoute />} />
               <Route path="transact" element={<TransactRoute />} />
               <Route path="markets" element={<MarketsRoute />} />
