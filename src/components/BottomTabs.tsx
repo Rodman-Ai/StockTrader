@@ -10,7 +10,7 @@ const TABS = [
 
 export function BottomTabs() {
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-bg-elevated border-t border-line z-30 pb-[env(safe-area-inset-bottom)]">
+    <nav className="lg:hidden bg-bg-elevated border-b border-line">
       <div className="grid grid-cols-5">
         {TABS.map((t) => (
           <NavLink

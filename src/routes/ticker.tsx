@@ -77,7 +77,7 @@ export default function TickerRoute() {
     : `${range === '1D' ? '5-minute' : range === '1W' ? 'hourly' : range === '5Y' ? 'weekly' : 'daily'} closes · live last point`;
 
   return (
-    <div className="flex flex-col pb-24 lg:pb-0">
+    <div className="flex flex-col">
       <div className="border-b border-line">
         <QuoteHeader symbol={sym} />
       </div>

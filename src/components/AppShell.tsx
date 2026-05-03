@@ -53,18 +53,20 @@ export function AppShell() {
           <Watchlist />
         </aside>
         <section
-          className={`flex flex-col ${isTicker ? '' : 'pb-24 lg:pb-0'}`}
+          className={`flex flex-col ${isTicker ? 'pb-20 lg:pb-10' : 'pb-20 lg:pb-10'}`}
         >
           <Outlet />
         </section>
       </main>
 
-      <div className="lg:mb-0 mb-14">
+      <Footer />
+
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-bg-elevated border-t border-line">
+        <BottomTabs />
         <TickerTape />
+        <div className="lg:hidden h-[env(safe-area-inset-bottom)]" />
       </div>
 
-      <Footer />
-      <BottomTabs />
       <ReplayDialog open={replayOpen} onClose={() => setReplayOpen(false)} />
     </div>
   );

@@ -22,7 +22,7 @@ export function TickerTape() {
 
   return (
     <div
-      className="ticker-tape group bg-bg-elevated border-y border-line overflow-hidden"
+      className="ticker-tape group bg-bg-elevated overflow-hidden"
       role="region"
       aria-label="Market ticker"
     >
