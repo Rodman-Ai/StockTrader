@@ -66,7 +66,7 @@ describe('placeOrder market sell', () => {
 });
 
 describe('placeOrder limit', () => {
-  it('crosses immediately when buy limit is at or above last', () => {
+  it('marketable buy limit fills at last price (better than the limit)', () => {
     const p = empty(10_000);
     const r = placeOrder(
       p,
@@ -75,7 +75,19 @@ describe('placeOrder limit', () => {
     );
     expect(r.ok).toBe(true);
     if (!r.ok || !r.trade) throw new Error('expected fill');
-    expect(r.trade.price).toBe(210);
+    expect(r.trade.price).toBe(200);
+  });
+
+  it('marketable sell limit fills at last price (better than the limit)', () => {
+    const p = withPosition(10, 100);
+    const r = placeOrder(
+      p,
+      { symbol: 'AAPL', side: 'sell', type: 'limit', qty: 5, limitPrice: 190 },
+      200,
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok || !r.trade) throw new Error('expected fill');
+    expect(r.trade.price).toBe(200);
   });
 
   it('rests when buy limit is below last', () => {
@@ -136,7 +148,7 @@ describe('applyTrade', () => {
 });
 
 describe('tryFillOpenOrders', () => {
-  it('fills a resting buy limit when price drops to limit', () => {
+  it('fills a resting buy limit at the crossed price when price drops below limit', () => {
     let p = empty(10_000);
     const r = placeOrder(
       p,
@@ -148,7 +160,7 @@ describe('tryFillOpenOrders', () => {
     const next = tryFillOpenOrders(p, { AAPL: 188 });
     expect(next.openOrders.length).toBe(0);
     expect(next.history.length).toBe(1);
-    expect(next.history[0].price).toBe(190);
+    expect(next.history[0].price).toBe(188);
     expect(next.positions.AAPL.qty).toBe(5);
   });
 

@@ -55,7 +55,8 @@ export function placeOrder(
   }
 
   if (canCrossLimit(input.side, input.limitPrice!, lastPrice)) {
-    return fillImmediate(portfolio, order, input.limitPrice!, now);
+    const fillPrice = marketableLimitPrice(input.side, input.limitPrice!, lastPrice);
+    return fillImmediate(portfolio, order, fillPrice, now);
   }
 
   if (input.side === 'sell') {
@@ -121,6 +122,10 @@ function canCrossLimit(side: 'buy' | 'sell', limit: number, last: number): boole
   return side === 'buy' ? last <= limit : last >= limit;
 }
 
+function marketableLimitPrice(side: 'buy' | 'sell', limit: number, last: number): number {
+  return side === 'buy' ? Math.min(last, limit) : Math.max(last, limit);
+}
+
 export function tryFillOpenOrders(
   portfolio: Portfolio,
   lastPrices: Record<string, number>,
@@ -139,7 +144,7 @@ export function tryFillOpenOrders(
       last > 0 &&
       canCrossLimit(order.side, order.limitPrice!, last)
     ) {
-      const fillPrice = order.limitPrice!;
+      const fillPrice = marketableLimitPrice(order.side, order.limitPrice!, last);
       const total = round2(order.qty * fillPrice);
       if (order.side === 'buy' && result.cash + EPS < total) {
         remaining.push(order);

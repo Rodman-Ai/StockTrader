@@ -1,15 +1,27 @@
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { usePortfolio } from '@/store/usePortfolio';
+import { useWatchlist } from '@/store/useWatchlist';
+import { useEquityHistory } from '@/store/useEquityHistory';
 import { ActivityList } from '@/components/ActivityList';
 import { PerformanceTiles } from '@/components/PerformanceTiles';
 import { fmtUsd } from '@/utils/format';
 
 export default function ActivityRoute() {
-  const reset = usePortfolio((s) => s.reset);
+  const resetPortfolio = usePortfolio((s) => s.reset);
+  const resetWatchlist = useWatchlist((s) => s.reset);
+  const resetEquityHistory = useEquityHistory((s) => s.reset);
   const tradeCount = usePortfolio((s) => s.portfolio.history.length);
   const openOrders = usePortfolio((s) => s.portfolio.openOrders);
   const cancelOrder = usePortfolio((s) => s.cancelOrder);
+
+  const resetAll = () => {
+    if (confirm('Reset all demo data? This will erase your simulated trades, watchlist edits, and equity history.')) {
+      resetPortfolio();
+      resetWatchlist();
+      resetEquityHistory();
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -77,15 +89,10 @@ export default function ActivityRoute() {
         <div>
           <h3 className="font-semibold">Reset demo</h3>
           <p className="text-xs text-text-dim mt-1">
-            Restore the synthetic starting state: $100,000 cash, five seed positions, and example trade history.
+            Restore the synthetic starting state: $100,000 cash, five seed positions, example trade history, the seeded watchlist, and a fresh equity curve.
           </p>
         </div>
-        <button
-          className="btn-ghost"
-          onClick={() => {
-            if (confirm('Reset all demo data? This will erase your simulated trades.')) reset();
-          }}
-        >
+        <button className="btn-ghost" onClick={resetAll}>
           Reset
         </button>
       </div>

@@ -5,13 +5,8 @@ import { usePortfolio } from '@/store/usePortfolio';
 import { useReplay } from '@/store/useReplay';
 import { replayEngine } from '@/replay/engine';
 
-let started = false;
-
 export function useMarketStream() {
   useEffect(() => {
-    if (started) return;
-    started = true;
-
     const provider = getProvider();
 
     const unsub = provider.onTick((symbol, price, ts) => {

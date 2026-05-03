@@ -58,15 +58,8 @@ export const useMarket = create<MarketState>((set, get) => ({
   setTick: (symbol, price, ts) =>
     set((s) => {
       const existing = s.quotes[symbol];
+      if (existing && existing.ts >= ts) return s;
       const prevClose = existing?.prevClose ?? price;
-      if (existing && existing.ts >= ts) {
-        return {
-          quotes: {
-            ...s.quotes,
-            [symbol]: { ...existing, price, prevClose, ts: existing.ts },
-          },
-        };
-      }
       return {
         quotes: {
           ...s.quotes,

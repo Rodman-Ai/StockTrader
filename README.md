@@ -153,6 +153,7 @@ src/
     useMarket.ts            # in-memory live quotes (+ replay ticks)
     usePortfolio.ts         # persisted: cash, positions, history, openOrders
     useWatchlist.ts         # persisted: editable symbol list
+    useEquityHistory.ts     # persisted: daily equity snapshots
     useReplay.ts            # transient: replay mode + sim clock
 
   replay/
@@ -163,28 +164,45 @@ src/
 
   components/
     AppShell.tsx            # responsive layout, header, replay button
-    BottomTabs.tsx          # mobile tab bar
-    Chart.tsx               # Recharts area + time-range pills
-    QuoteHeader.tsx         # symbol, price, change/%
+    BottomTabs.tsx          # mobile tab bar (5 tabs)
+    Chart.tsx               # lightweight-charts area + candles + volume + SMAs + range pills
+    QuoteHeader.tsx         # symbol, price, change/%, day range, 52w range bar
     OrderTicket.tsx         # buy/sell, market/limit, preview modal
-    PositionsTable.tsx
+    PositionsTable.tsx      # holdings table with 30D sparkline column
     ActivityList.tsx
     Watchlist.tsx           # editable, with add/remove
     PaperBadge.tsx          # toggles to "REPLAY" when active
     ReplayBar.tsx           # persistent control strip
     ReplayDialog.tsx        # date + speed picker
+    StatsPanel.tsx          # P/E, EPS, mkt cap, div yield, 52w hi/lo, etc.
+    NewsPanel.tsx           # per-ticker news (Yahoo first, Finnhub fallback)
+    EquityCurve.tsx         # equity curve + SPY overlay + drawdown pane
+    AllocationDonut.tsx     # SVG donut for holding/sector allocation
+    SectorBars.tsx          # stacked sector exposure bar
+    RangeBar.tsx            # 52w range track for QuoteHeader
+    Sparkline.tsx           # 30D inline sparkline used in tables
+    PerformanceTiles.tsx    # realized P/L + win rate stats on Activity
+    SymbolSearch.tsx        # ticker/company search input
+    IndexStrip.tsx          # SPY/QQQ/DIA/IWM with sparklines
+    MoversList.tsx          # top gainers/losers cards
+    AggregateNewsPanel.tsx  # news aggregated across watchlist + holdings
+    QuickBuyButton.tsx      # +1 share one-tap buy
     Footer.tsx
 
   routes/
-    portfolio.tsx           # / — equity tiles + positions
-    markets.tsx             # /markets — symbol grid
-    activity.tsx            # /activity — open orders + history + reset
-    ticker.tsx              # /ticker/:symbol — quote, chart, ticket
+    portfolio.tsx           # / — equity tiles + curve + donuts + positions
+    research.tsx            # /research — search, indices, movers, news
+    transact.tsx            # /transact — pick + ticket + open orders
+    markets.tsx             # /markets — full symbol grid
+    activity.tsx            # /activity — perf tiles + open orders + history
+    ticker.tsx              # /ticker/:symbol — quote, chart, ticket, stats, news
 
   utils/
     format.ts               # Intl.NumberFormat helpers
     market-hours.ts         # is US market open?
     et-bounds.ts            # ET 9:30 / 16:00 timestamps for a date
+    indicators.ts           # sma()
+    stats.ts                # computeDrawdowns, realizedPL
 
   styles/index.css          # Tailwind base + component classes
 ```

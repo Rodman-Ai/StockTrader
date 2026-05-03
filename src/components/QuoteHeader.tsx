@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useMarket } from '@/store/useMarket';
 import { fmtPct, fmtUsd, colorFor } from '@/utils/format';
@@ -7,7 +8,13 @@ import { RangeBar } from './RangeBar';
 
 export function QuoteHeader({ symbol }: { symbol: string }) {
   const quote = useMarket((s) => s.quotes[symbol]);
-  const stale = quote ? Date.now() - quote.ts > 60_000 : false;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!quote) return;
+    const id = window.setInterval(() => setNow(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, [quote]);
+  const stale = quote ? now - quote.ts > 60_000 : false;
 
   const { data: metrics } = useQuery({
     queryKey: ['metrics', symbol],

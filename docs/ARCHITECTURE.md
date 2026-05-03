@@ -76,7 +76,7 @@ interface MarketDataProvider {
 
 The Finnhub adapter:
 - Maintains a single WebSocket and re-subscribes everything on reconnect.
-- Dedupes per-symbol `subscribed` set so React's strict-mode double effects don't double-subscribe.
+- Dedupes per-symbol `subscribed` set so multiple consumers (a route hook plus the global stream) don't double-subscribe to the WebSocket.
 - Reduces incoming `data[]` batches to "latest tick per symbol" before fanning out.
 - Reconnects with a 3s delay on close.
 
@@ -142,7 +142,7 @@ start(date, speed, initialSymbols)
   clockAt = bounds.open
   startedAt = wall clock
   mode = 'loading'
-  preload all subscribed (Promise.all)
+  preload all subRefs.keys() (Promise.all)
   mode = 'playing'
   setInterval(tick, 200ms)
 
@@ -151,7 +151,7 @@ simNow()
   else → min(clockAt + (now - startedAt) * speed, bounds.close)
 
 tick()
-  for each subscribed sym:
+  for each sym in subRefs.keys():
     while candles[cursor].t <= simNow:
       useMarket.setReplayTick(sym, candle.c, prevClose, candle.t)
       cursor++
@@ -172,7 +172,7 @@ When replay stops, the subscribe effects re-run, the live provider re-subscribes
 
 ### Race-condition guard
 
-`preload()` checks `if (!this.subscribed.has(symbol)) return;` after the candle fetch resolves. This handles the case where the user clicks "Start replay" twice rapidly — the first call's in-flight fetches won't write stale data into the second call's freshly-cleared maps.
+Subscribers are reference-counted in `subRefs: Map<string, number>`, so a route hook subscribing to a symbol that's already in the watchlist set doesn't lose ticks when the route unmounts. `preload()` checks `if (!this.subRefs.has(symbol)) return;` after the candle fetch resolves so a `start()` called twice rapidly doesn't leak stale data into the second call's freshly-cleared maps.
 
 ## Routing
 
@@ -191,7 +191,7 @@ When replay stops, the subscribe effects re-run, the live provider re-subscribes
 | `src/utils/et-bounds.test.ts` | EDT and EST market-bounds correctness, last-weekday helper. |
 | `src/utils/indicators.test.ts` | SMA: window math, undersized input, identity for period=1, long monotonic series. |
 
-Total: **44 tests** at the time of writing. Component-level tests are deferred — the surface is small and primarily integrative.
+Total: **57 tests** at the time of writing (broker engine, drawdown + realized P/L stats, range mapping, indicators, ET market bounds, synthetic candles, Yahoo response parsers). Component-level tests are deferred — the surface is small and primarily integrative.
 
 ## Known limitations
 
@@ -199,6 +199,7 @@ Total: **44 tests** at the time of writing. Component-level tests are deferred �
 - **Chart history comes from Yahoo Finance**, not Finnhub. Finnhub's `/stock/candle` is premium-only as of recent policy changes; Yahoo's `query1.finance.yahoo.com/v8/finance/chart` is free, undocumented, and CORS-blocked from the browser. We fetch through a configurable CORS proxy (`VITE_CORS_PROXY`, default `api.allorigins.win`). When Yahoo / the proxy fails, `src/routes/ticker.tsx` falls back to `synthesizeCandles()` from `src/market/synth.ts` — a deterministic per-symbol log-normal walk anchored to the live price. The chart shows an amber "Synthetic" badge so the substitution isn't hidden. See `docs/CORS-WORKER.md` for the recommended Cloudflare Worker setup. Replay mode also fetches via Yahoo; older replay dates (>~7 days) may have no 1-minute data and replay will be empty for those days.
 - **Single global provider singleton** — fine for one demo user; would need scoping if we ever multi-tenant.
 - **Replay state is intentionally transient** — a page reload returns to live mode. Adding `persist` would be a few lines if needed.
+- **Dependency advisories**: `npm audit` reports 9 vulnerabilities (5 moderate, 4 high) at the time of writing. All advisories are in **dev-only dependencies** — `vite`, `vitest`, `esbuild`, and the `vite-plugin-pwa` → `workbox-build` → `@rollup/plugin-terser` → `serialize-javascript` chain. None of this code ships in the production bundle to users. Every fix path is a semver-major upgrade (Vite 5 → 8, Vitest 2 → 4, vite-plugin-pwa to 1.2), so they're held off the auto-fix path; bump them deliberately when ready.
 
 ## Adding a new feature
 
