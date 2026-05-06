@@ -1,12 +1,13 @@
 import type {
   Candle,
+  Fundamentals,
   MarketDataProvider,
-  Metrics,
   NewsItem,
   Profile,
   Quote,
   TickHandler,
 } from './provider';
+import { mapFinnhubMetrics } from './fundamentals';
 
 const REST_BASE = 'https://finnhub.io/api/v1';
 const WS_BASE = 'wss://ws.finnhub.io';
@@ -153,25 +154,11 @@ export class FinnhubProvider implements MarketDataProvider {
     };
   }
 
-  async getMetrics(symbol: string): Promise<Metrics> {
+  async getMetrics(symbol: string): Promise<Fundamentals> {
     const r = await fetch(`${REST_BASE}/stock/metric?symbol=${symbol}&metric=all&token=${apiKey()}`);
     if (!r.ok) throw new Error(`Metrics ${symbol} failed: ${r.status}`);
     const j = await r.json();
-    const m = j?.metric ?? {};
-    const num = (v: unknown): number | undefined =>
-      typeof v === 'number' && Number.isFinite(v) ? v : undefined;
-    return {
-      peTTM: num(m.peBasicExclExtraTTM) ?? num(m.peNormalizedAnnualTTM),
-      epsTTM: num(m.epsInclExtraItemsTTM) ?? num(m.epsBasicExclExtraTTM) ?? num(m.epsNormalizedAnnual),
-      marketCap: num(m.marketCapitalization),
-      divYield: num(m.dividendYieldIndicatedAnnual) ?? num(m.currentDividendYieldTTM),
-      beta: num(m.beta),
-      high52w: num(m['52WeekHigh']),
-      low52w: num(m['52WeekLow']),
-      ps: num(m.psTTM),
-      pb: num(m.pbAnnual) ?? num(m.pbQuarterly),
-      avgVolume10d: num(m['10DayAverageTradingVolume']),
-    };
+    return mapFinnhubMetrics(j?.metric ?? {});
   }
 
   async getNews(symbol: string, fromMs: number, toMs: number): Promise<NewsItem[]> {

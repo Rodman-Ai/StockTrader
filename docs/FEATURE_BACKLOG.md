@@ -1,49 +1,40 @@
 # Feature Backlog
 
-Reviewed on 2026-05-06. This backlog ranks opportunities by user value, effort, competitive relevance, and implementation risk.
+Reviewed on 2026-05-06. This backlog ranks deployment opportunities by user value, effort, competitive relevance, and implementation risk.
 
 Effort scale: `S` is about one day or less, `M` is one to three days, and `L` is larger or likely needs new infrastructure. Risk scale: `Low`, `Medium`, `High`.
 
-## Ranked Opportunities
+## Top 20 Deployment Backlog
 
-| Rank | Priority | Feature | Value | Effort | Competitive relevance | Risk | Notes |
-|---:|---|---|---|---|---|---|---|
-| 1 | P1 | Alerts hub: price, percent move, watchlist-wide alerts, and delivery settings. | High | M | Robinhood, Webull, TradingView | Medium | Biggest retention and parity gap. Start with local Notifications API before web push. |
-| 2 | P1 | Global connection state for live, reconnecting, stale, offline, replay, and synthetic data. | High | S | Webull, IBKR-style status surfaces | Low | Builds trust and clarifies data quality. |
-| 3 | P1 | Dollar-based and fractional paper orders. | High | M | Robinhood, Fidelity, Webull | Medium | Requires rounding policy, preview math, and position precision updates. |
-| 4 | P1 | EMA, RSI, and MACD chart indicators. | High | M | Webull, TradingView, thinkorswim | Medium | Fits current chart stack and improves analysis depth. |
-| 5 | P1 | Multiple named watchlists with reorder, sort, and bulk paste. | High | M | Webull, TradingView, Fidelity | Medium | Extends current persisted watchlist store. |
-| 6 | P1 | Stock screener with core filters. | High | L | Webull, TradingView, Fidelity | High | Needs data availability decisions and filter caching. |
-| 7 | P2 | Bid/ask spread and extended-hours quote line. | Medium | M | Robinhood, Webull | Medium | Depends on provider coverage and fallback display rules. |
-| 8 | P2 | Keyboard shortcuts for buy/sell, preview, cancel, navigation, and watchlist stepping. | Medium | S | IBKR, TradingView, thinkorswim | Low | High leverage for desktop users. |
-| 9 | P2 | Settings screen for theme, data source, replay defaults, and reset/export controls. | Medium | S | Common platform expectation | Low | Creates a home for controls currently spread across the app. |
-| 10 | P2 | CSV export of holdings, trades, and realized P/L. | Medium | S | Fidelity, power-user norm | Low | Low-risk value for review and sharing. |
-| 11 | P2 | Mobile bottom-sheet order ticket with persistent quote context. | High | M | Robinhood, Webull | Medium | Improves the highest-risk mobile workflow. |
-| 12 | P2 | Chart compare overlay for a second ticker or SPY normalization. | Medium | M | Yahoo, Webull, TradingView | Medium | Reuses existing SPY benchmark logic ideas. |
-| 13 | P2 | Drawing tools: horizontal line, trendline, and channel. | Medium | L | TradingView, Webull | High | Valuable but interaction-heavy. |
-| 14 | P2 | Recurring buys for simulated dollar-cost averaging. | Medium | M | Robinhood, Fidelity | Medium | Pairs naturally with fractional orders. |
-| 15 | P2 | Trade journal notes and required rationale field. | Medium | S | Original discipline feature | Low | Strong fit for paper-trading education. |
-| 16 | P2 | Data provider switcher and explicit mock/offline provider. | Medium | M | Reliability feature | Medium | Strengthens demos during provider outages. |
-| 17 | P2 | Tax lots and realized/unrealized drilldown. | Medium | L | Fidelity, IBKR | High | Requires lot model UI and math decisions. |
-| 18 | P2 | Earnings calendar and earnings-date alerts. | Medium | M | Yahoo, Webull | Medium | Data availability should be verified first. |
-| 19 | P2 | First-run tour and glossary for P/E, EPS, beta, stop, limit, TIF. | Medium | S | Robinhood Learn | Low | Reduces confusion for non-pro users. |
-| 20 | P2 | Offline read-only PWA portfolio and last quotes. | Medium | M | PWA quality | Medium | Needs cache policy and stale disclosure. |
-| 21 | P3 | Custom install prompt and PWA readiness checklist. | Medium | S | Mobile PWA polish | Low | Complements fixed manifest. |
-| 22 | P3 | Sector heatmap. | Medium | M | Finviz, broker research tabs | Medium | Nice visual scan surface after screener work. |
-| 23 | P3 | Multiple seed profiles. | Medium | S | Demo differentiation | Low | Good for education and repeat demos. |
-| 24 | P3 | Day P/L versus total P/L toggle. | Medium | S | Webull, broker norm | Medium | Needs clear day baseline. |
-| 25 | P3 | Visible slippage estimate in order preview. | Medium | S | Trust feature | Low | Existing broker constant makes this straightforward. |
-| 26 | P3 | Trailing stops. | Medium | M | IBKR, Webull | Medium | Extend current stop order model. |
-| 27 | P3 | Bracket orders. | Medium | L | thinkorswim | High | Requires linked order lifecycle. |
-| 28 | P3 | Watchlist row sparklines. | Medium | S | Robinhood, Webull | Medium | Historical-data cost needs throttling. |
-| 29 | P3 | Mobile full-screen chart mode. | Medium | S | Robinhood, TradingView | Medium | Mainly layout and gesture polish. |
-| 30 | P3 | Accessibility pass with named controls, focus states, and touch target audit. | High | M | Baseline quality | Low | Should accompany all UI work. |
+| Rank | Status | Priority | Feature | Value | Effort | Competitive relevance | Risk | Notes |
+|---:|---|---|---|---|---|---|---|---|
+| 1 | Shipped | P1 | Expanded ticker research and stock statistics. | High | M | Robinhood, Webull, TradingView, Fidelity | Medium | Ticker detail now groups P/E, EBITDA fields, EV/EBITDA, revenue, margins, debt, growth, dividends, trading stats, analyst/earnings placeholders, and source/freshness disclosure. Next: reuse in search previews, watchlists, and screener rows. |
+| 2 | Open | P1 | Alerts hub. | High | M | Robinhood, Webull, TradingView | Medium | Price, percent move, 52-week high/low, volume spike, news, and watchlist-wide alerts. Start with local notifications before web push. |
+| 3 | Open | P1 | Stock screener. | High | L | Robinhood, Webull, TradingView, Fidelity | High | Filter by valuation, growth, profitability, dividend, volume, market cap, sector, and technical state. Reuse the expanded fundamentals model. |
+| 4 | Open | P1 | Dollar-based and fractional paper orders. | High | M | Robinhood, Fidelity, Webull | Medium | Buy by dollars or fractional shares, with preview math, cash checks, and deterministic 0.001-share rounding. |
+| 5 | Open | P1 | Global data-status pill. | High | S | Webull, broker platform norm | Low | Show live, reconnecting, stale, offline, replay, and synthetic states across quote, chart, and trade surfaces. |
+| 6 | Open | P1 | EMA, RSI, and MACD indicators. | High | M | Robinhood, Webull, TradingView, thinkorswim | Medium | First high-value technical set; add a small indicator selector and saved defaults. |
+| 7 | Open | P1 | Multiple named watchlists. | High | M | Webull, TradingView, Fidelity | Medium | Rename, reorder, sort, bulk paste, and quick alert creation. |
+| 8 | Open | P2 | Mobile bottom-sheet order ticket. | High | M | Robinhood, Webull | Medium | Persistent quote, buying power, preview, and clearer confirmation on small screens. |
+| 9 | Open | P2 | Bid/ask and extended-hours quote context. | Medium | M | Robinhood, Webull | Medium | Show spread, session, pre/post-market move, and fallback disclosure when unavailable. |
+| 10 | Open | P2 | Watchlist mini stats and sparklines. | Medium | M | Robinhood, Webull, TradingView | Medium | Add price, day move, volume/relative volume, P/E, market cap, and compact trend. |
+| 11 | Open | P2 | Earnings calendar and earnings alerts. | Medium | M | Robinhood, Webull, Fidelity | Medium | Surface upcoming earnings, EPS estimate/actual, and ticker-level event reminders. |
+| 12 | Open | P2 | Chart compare overlay. | Medium | M | TradingView, Fidelity, Yahoo-style research | Medium | Compare against SPY or another ticker with normalized percent returns. |
+| 13 | Open | P2 | CSV export/import. | Medium | S | Fidelity, power-user norm | Low | Export and import holdings, orders, fills, P/L, watchlists, and screener results. |
+| 14 | Open | P2 | Settings screen. | Medium | S | Common platform expectation | Low | Centralize theme, provider status, replay defaults, reset/export, and PWA options. |
+| 15 | Open | P2 | Keyboard shortcuts and command palette. | Medium | S | TradingView, thinkorswim, IBKR-style workflow | Low | Fast symbol search, trade actions, cancel order, watchlist stepping, and route navigation. |
+| 16 | Open | P2 | Trade journal. | Medium | S | Trader discipline workflows | Low | Add notes, rationale, tags, price snapshot metadata, and post-trade review fields. |
+| 17 | Open | P2 | Recurring simulated buys. | Medium | M | Robinhood, Fidelity | Medium | Dollar-cost averaging schedules that pair with fractional orders. |
+| 18 | Open | P2 | Tax lots and realized/unrealized drilldown. | Medium | L | Fidelity, thinkorswim | High | FIFO lot accounting, realized gains, cost-basis detail, and per-symbol P/L history. |
+| 19 | Open | P3 | Advanced simulated orders. | Medium | L | Webull, thinkorswim | High | Trailing stops and bracket orders with clear linked-order lifecycle. |
+| 20 | Open | P3 | Drawing tools and saved chart layouts. | Medium | L | TradingView, Webull, thinkorswim | High | Horizontal line, trendline, channel, saved indicator sets, and per-symbol chart preferences. |
 
 ## Shipped Items Removed From Next Picks
 
-These are no longer backlog recommendations because they are already present in current `main`:
+These are no longer open recommendations because they are already present in current `main`:
 
 - Symbol search.
+- Expanded ticker research stats and provider freshness disclosure.
 - Stop and stop-limit orders.
 - Time-in-force controls.
 - Open-order cancel controls.
@@ -56,6 +47,7 @@ These are no longer backlog recommendations because they are already present in 
 
 ## Prioritization Notes
 
+- Research depth should now flow into discovery: search previews, watchlists, and screener rows should reuse the same fundamentals model instead of remapping fields.
 - Trust and transparency features should stay ahead of flashy analytics because data quality is the main user risk in a client-only market app.
 - Trading actions need extra friction and clarity even though the app is simulated.
 - Features that require new external data should include fallback behavior before UI build-out.

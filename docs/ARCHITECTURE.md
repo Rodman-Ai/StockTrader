@@ -26,7 +26,7 @@ flowchart LR
 - `connect()` / `disconnect()` for the WebSocket lifecycle.
 - `subscribe(symbol)` / `unsubscribe(symbol)` for live trade ticks.
 - `onTick(handler)` for fan-out to app stores.
-- REST methods for quotes, candles, profiles, metrics, and news.
+- REST methods for quotes, candles, profiles, fundamentals/metrics, and news.
 
 The provider keeps a single WebSocket, tracks subscribed symbols, dedupes subscriptions, reduces Finnhub batches to the latest tick per symbol, and reconnects on close. The rest of the app talks to the provider interface instead of binding directly to Finnhub protocol details.
 
@@ -93,11 +93,13 @@ The app uses `HashRouter`. URLs look like `/#/ticker/AAPL`, which avoids GitHub 
 
 ## Testing
 
-Current baseline: 8 test files, 71 passing tests.
+Current baseline: 10 test files, 77 passing tests.
 
 | File | Coverage |
 |---|---|
 | `src/broker/engine.test.ts` | Market fills, slippage, limit/stop/stop-limit behavior, TIF handling, insufficient cash/shares, open-order fills. |
+| `src/components/stats-panel-model.test.ts` | Expanded research-stat grouping, unavailable-value formatting, and volume-relative calculations. |
+| `src/market/fundamentals.test.ts` | Finnhub metric mapping for legacy quote-header fields and richer fundamentals. |
 | `src/market/ranges.test.ts` | Range-to-resolution and lookback mapping. |
 | `src/market/synth.test.ts` | Synthetic candle determinism and OHLC invariants. |
 | `src/market/yahoo.test.ts` | Yahoo response parsing and malformed/empty data handling. |
@@ -123,5 +125,5 @@ $env:BASE_PATH='/StockTrader/'; npm.cmd run build
 - Free Finnhub keys are rate-limited and embedded in the public client bundle.
 - There is one provider singleton, which is fine for a local demo but not a multi-tenant service.
 - Replay state is intentionally transient and resets to live mode on reload.
-- Component/browser smoke coverage is still missing; see `docs/BUGS.md` and `docs/UX_UI_REVIEW.md`.
+- Automated component/browser smoke coverage is still missing; see `docs/BUGS.md` and `docs/UX_UI_REVIEW.md`.
 - `npm audit --json` is currently clean on the reviewed dependency set.

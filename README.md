@@ -43,7 +43,7 @@ The current systemic review is tracked in durable docs:
 
 - Editable watchlist with live quotes.
 - Research tab with symbol search, US ETF index strip, top gainers/losers, and aggregate news.
-- Ticker detail page with quote header, chart, order ticket, key stats, company profile, and recent news.
+- Ticker detail page with quote header, chart, order ticket, expanded research stats, company profile, and recent news.
 - Quote header shows day range, open, previous close, 52-week range, and stale-data state.
 
 ### Charting And Replay
@@ -82,7 +82,7 @@ Open http://localhost:5173.
 | `npm run dev` | Start the Vite dev server. |
 | `npm run build` | Type-check and build production assets to `dist/`. Honors `BASE_PATH`. |
 | `npm run preview` | Serve the production build locally. |
-| `npm test` | Run the Vitest unit suite. Current baseline: 71 passing tests. |
+| `npm test` | Run the Vitest unit suite. Current baseline: 77 passing tests. |
 | `npm run typecheck` | Run TypeScript without emitting files. |
 
 ## Project Layout

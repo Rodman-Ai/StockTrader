@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getProvider } from '@/market/finnhub';
 import { fetchYahooByRange } from '@/market/yahoo';
-import { fmtBigNum, fmtMarketCapMillions, fmtNum, fmtUsd } from '@/utils/format';
+import { buildFundamentalSections, formatStatValue } from './stats-panel-model';
 
 export function StatsPanel({ symbol }: { symbol: string }) {
   const profileQ = useQuery({
@@ -32,61 +32,59 @@ export function StatsPanel({ symbol }: { symbol: string }) {
   const profile = profileQ.data;
   const metrics = metricsQ.data;
   const loading = profileQ.isLoading || metricsQ.isLoading;
-  const failed = profileQ.isError && metricsQ.isError;
-
-  const todayVol = sparklineQ.data?.[sparklineQ.data.length - 1]?.v;
-  const avgVolUnits = metrics?.avgVolume10d ? metrics.avgVolume10d * 1_000_000 : undefined;
-  const volRatio =
-    todayVol && avgVolUnits && avgVolUnits > 0 ? todayVol / avgVolUnits : undefined;
-
-  const stats = [
-    { label: 'P/E (TTM)', value: metrics?.peTTM, fmt: (n: number) => fmtNum(n) },
-    { label: 'EPS (TTM)', value: metrics?.epsTTM, fmt: (n: number) => fmtUsd(n) },
-    { label: 'Market cap', value: metrics?.marketCap ?? profile?.marketCap, fmt: (n: number) => fmtMarketCapMillions(n) },
-    { label: 'Div yield', value: metrics?.divYield, fmt: (n: number) => `${n.toFixed(2)}%` },
-    { label: '52w high', value: metrics?.high52w, fmt: (n: number) => fmtUsd(n) },
-    { label: '52w low', value: metrics?.low52w, fmt: (n: number) => fmtUsd(n) },
-    { label: 'Beta', value: metrics?.beta, fmt: (n: number) => fmtNum(n) },
-    { label: 'P/S (TTM)', value: metrics?.ps, fmt: (n: number) => fmtNum(n) },
-    { label: 'P/B', value: metrics?.pb, fmt: (n: number) => fmtNum(n) },
-    { label: 'Avg vol (10d)', value: metrics?.avgVolume10d, fmt: (n: number) => `${fmtBigNum(n * 1_000_000)}` },
-    {
-      label: 'Vol vs 10d',
-      value: volRatio,
-      fmt: (n: number) => `${(n * 100).toFixed(0)}%`,
-    },
-  ];
+  const hasDataGap = profileQ.isError || metricsQ.isError;
+  const todayVolume = sparklineQ.data?.[sparklineQ.data.length - 1]?.v;
+  const sections = buildFundamentalSections({ metrics, profile, todayVolume });
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-4 py-3 border-b border-line flex items-center justify-between">
-        <h3 className="font-semibold">Key stats</h3>
+      <div className="px-4 py-3 border-b border-line flex items-center justify-between gap-3">
+        <h3 className="font-semibold">Research stats</h3>
         {profile?.industry && (
-          <span className="text-xs text-text-dim">{profile.industry}</span>
+          <span className="text-xs text-text-dim text-right">{profile.industry}</span>
         )}
       </div>
 
       {loading && (
-        <div className="px-4 py-6 text-sm text-text-dim">Loading…</div>
+        <div className="px-4 py-6 text-sm text-text-dim">Loading...</div>
       )}
 
-      {failed && !loading && (
-        <div className="px-4 py-6 text-sm text-text-dim">
-          Stats unavailable for this symbol on the current data plan.
-        </div>
-      )}
-
-      {!loading && !failed && (
+      {!loading && (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-line">
-            {stats.map((s) => (
-              <div key={s.label} className="bg-bg-elevated px-3 py-3 flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-text-dim">
-                  {s.label}
-                </span>
-                <span className="text-sm font-mono tabular-nums">
-                  {s.value != null ? s.fmt(s.value) : <span className="text-text-dim">—</span>}
-                </span>
+          {hasDataGap && (
+            <div className="px-4 py-3 border-b border-line text-xs text-text-dim">
+              Some profile or fundamentals data is unavailable for this symbol on the current data plan. Provider gaps are shown as --.
+            </div>
+          )}
+
+          <div className="divide-y divide-line">
+            {sections.map((section) => (
+              <div key={section.title} className="px-4 py-4">
+                <h4 className="text-xs uppercase tracking-wider text-text-dim mb-3">
+                  {section.title}
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-px bg-line overflow-hidden rounded">
+                  {section.items.map((item) => {
+                    const value = formatStatValue(item);
+                    return (
+                      <div
+                        key={`${section.title}-${item.label}`}
+                        className="bg-bg-elevated px-3 py-3 flex flex-col gap-0.5 min-w-0"
+                      >
+                        <span className="text-[10px] uppercase tracking-wider text-text-dim truncate">
+                          {item.label}
+                        </span>
+                        <span
+                          className={`text-sm font-mono tabular-nums truncate ${
+                            value === '--' ? 'text-text-dim' : ''
+                          }`}
+                        >
+                          {value}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>
