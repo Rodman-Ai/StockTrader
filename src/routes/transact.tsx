@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '@/store/useMarket';
 import { usePortfolio } from '@/store/usePortfolio';
@@ -8,6 +8,7 @@ import { OrderTicket } from '@/components/OrderTicket';
 import { QuickBuyButton } from '@/components/QuickBuyButton';
 import { OpenOrdersFeed } from '@/components/OpenOrdersFeed';
 import { fmtPct, fmtUsd, colorFor } from '@/utils/format';
+import { buildTradeUniverse, chooseTradeSymbol } from './transact-helpers';
 
 export default function TransactRoute() {
   const positions = usePortfolio((s) => s.portfolio.positions);
@@ -16,15 +17,22 @@ export default function TransactRoute() {
   const watchlist = useWatchlist((s) => s.symbols);
   const quotes = useMarket((s) => s.quotes);
 
-  const universe = useMemo(() => {
-    const held = Object.keys(positions);
-    return Array.from(new Set([...held, ...watchlist]));
-  }, [positions, watchlist]);
+  const universe = useMemo(
+    () => buildTradeUniverse(positions, watchlist, openOrders),
+    [positions, watchlist, openOrders],
+  );
 
   useSubscribeMany(universe);
 
-  const [selected, setSelected] = useState<string>(() => universe[0] ?? 'AAPL');
-  useSubscribeSymbol(selected);
+  const [selected, setSelected] = useState<string>(() => chooseTradeSymbol('', universe));
+
+  useEffect(() => {
+    setSelected((current) => chooseTradeSymbol(current, universe));
+  }, [universe]);
+
+  useSubscribeSymbol(selected || undefined);
+
+  const selectedQuote = selected ? quotes[selected] : undefined;
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -39,18 +47,26 @@ export default function TransactRoute() {
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-4 items-start">
         <div className="lg:order-2">
-          <div className="card p-2 mb-3">
-            <div className="px-2 py-1 text-xs text-text-dim uppercase tracking-wider">
-              Trading
+          {selected ? (
+            <>
+              <div className="card p-2 mb-3">
+                <div className="px-2 py-1 text-xs text-text-dim uppercase tracking-wider">
+                  Trading
+                </div>
+                <div className="px-2 pb-2 flex items-baseline justify-between gap-3">
+                  <span className="text-lg font-semibold font-mono">{selected}</span>
+                  <span className="text-sm font-mono text-text-dim">
+                    {selectedQuote?.price ? fmtUsd(selectedQuote.price) : 'No quote'}
+                  </span>
+                </div>
+              </div>
+              <OrderTicket symbol={selected} />
+            </>
+          ) : (
+            <div className="card p-4 text-sm text-text-dim">
+              Add a ticker from Research or keep an open order to start trading.
             </div>
-            <div className="px-2 pb-2 flex items-baseline justify-between gap-3">
-              <span className="text-lg font-semibold font-mono">{selected}</span>
-              <span className="text-sm font-mono text-text-dim">
-                {quotes[selected]?.price ? fmtUsd(quotes[selected].price) : '—'}
-              </span>
-            </div>
-          </div>
-          <OrderTicket symbol={selected} />
+          )}
         </div>
 
         <div className="card overflow-hidden lg:order-1">
@@ -96,13 +112,13 @@ export default function TransactRoute() {
                             onClick={(e) => e.stopPropagation()}
                             className="text-[10px] text-text-dim hover:text-accent uppercase tracking-wider"
                           >
-                            view detail →
+                            view detail -&gt;
                           </Link>
                         </div>
                         <div className="text-right text-sm">
-                          <div className="font-mono">{q ? fmtUsd(q.price) : '—'}</div>
+                          <div className="font-mono">{q ? fmtUsd(q.price) : 'No quote'}</div>
                           <div className={`text-xs font-mono ${colorFor(change)}`}>
-                            {q ? fmtPct(changePct) : '—'}
+                            {q ? fmtPct(changePct) : ''}
                           </div>
                         </div>
                       </button>

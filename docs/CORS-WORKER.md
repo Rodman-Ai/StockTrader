@@ -1,41 +1,33 @@
-# CORS Worker for Yahoo Finance chart data
+# CORS Worker For Yahoo Finance Chart Data
 
-The chart fetches its history from Yahoo Finance's undocumented
-`query1.finance.yahoo.com/v8/finance/chart/...` endpoint. Yahoo doesn't send
-CORS headers, so a browser can't call it directly — it needs a tiny proxy that
-forwards the request server-side and adds the `Access-Control-Allow-Origin`
-header.
+The app fetches historical chart and replay candles from Yahoo Finance's undocumented `query1.finance.yahoo.com/v8/finance/chart/...` endpoint. Yahoo does not send browser CORS headers, so StockTrader needs a small server-side proxy.
 
-By default the app tries two free public proxies in sequence:
-**`https://api.allorigins.win/raw?url=`** then **`https://api.codetabs.com/v1/proxy/?quest=`**,
-each with an 8-second timeout. If the first 429s, hangs, or errors, the
-second is tried before the chart falls back to synthesized history. That's
-fine for casual exploration, but both are shared free infrastructure and
-will rate-limit you if you hit them hard. The recommended upgrade for
-anything you want to be reliable is a Cloudflare Worker you control.
+By default the app tries two public proxies in sequence:
 
-When `VITE_CORS_PROXY` is set, only that proxy is used — the public fallbacks
-are skipped because your worker is the trusted path.
+1. `https://api.allorigins.win/raw?url=`
+2. `https://api.codetabs.com/v1/proxy/?quest=`
+
+Each public proxy has an 8-second timeout. If both fail or return an unexpected response, the chart falls back to deterministic synthetic candles. Public proxies are useful for casual demos, but the reliable path is a Cloudflare Worker you control.
+
+When `VITE_CORS_PROXY` is set, only that proxy is used.
 
 ## Cost
 
-**Free.** Cloudflare Workers' free tier is 100,000 requests/day with no credit
-card required at signup. A typical session of this demo makes a handful of
-chart requests; you'd never approach the limit.
+Cloudflare Workers has a free tier that is more than enough for normal demo traffic. A typical StockTrader session makes a small number of chart requests.
 
 ## Deploy
 
-1. Sign up at <https://dash.cloudflare.com/sign-up> (free).
-2. Workers & Pages → Create → Worker → name it (e.g. `stocktrader-proxy`).
-3. Replace the starter code with the file below and click **Deploy**.
-4. Copy the deployed URL (e.g. `https://stocktrader-proxy.you.workers.dev`).
-5. In this repo, set `VITE_CORS_PROXY=https://stocktrader-proxy.you.workers.dev/?url=`
-   either in `.env` (local) or as a GitHub Actions secret (Pages build).
+1. Sign up at <https://dash.cloudflare.com/sign-up>.
+2. Go to Workers & Pages -> Create -> Worker.
+3. Name it, for example `stocktrader-proxy`.
+4. Replace the starter source with the worker below.
+5. Deploy.
+6. Copy the deployed URL, for example `https://stocktrader-proxy.example.workers.dev`.
+7. Set `VITE_CORS_PROXY=https://stocktrader-proxy.example.workers.dev/?url=` in `.env` for local dev or as a GitHub Actions secret for Pages builds.
 
-## Worker source
+## Worker Source
 
-The allowlist below restricts the worker to Yahoo Finance chart paths only.
-**Don't remove it** — without it the worker is an open relay anyone can abuse.
+The allowlist restricts the worker to Yahoo chart URLs. Do not remove it; without the allowlist the worker becomes an open relay.
 
 ```js
 const ALLOW = /^https:\/\/query1\.finance\.yahoo\.com\/v8\/finance\/chart\//;
@@ -46,10 +38,12 @@ export default {
     if (!target || !ALLOW.test(target)) {
       return new Response('forbidden', { status: 403 });
     }
+
     const upstream = await fetch(target, {
       headers: { 'user-agent': 'Mozilla/5.0 (StockTrader demo)' },
     });
     const body = await upstream.arrayBuffer();
+
     return new Response(body, {
       status: upstream.status,
       headers: {
@@ -62,21 +56,16 @@ export default {
 };
 ```
 
-## How the app uses it
+## Expected URL Shape
 
-`src/market/yahoo.ts` builds the Yahoo URL, encodes it, and prepends
-`VITE_CORS_PROXY`. The exact format expected is:
+`src/market/yahoo.ts` builds a Yahoo URL, encodes it, and prefixes it with `VITE_CORS_PROXY`:
 
+```text
+<VITE_CORS_PROXY><url-encoded Yahoo URL>
 ```
-<VITE_CORS_PROXY><url-encoded yahoo URL>
-```
 
-Both `https://api.allorigins.win/raw?url=` (the default) and
-`https://your-worker.example.workers.dev/?url=` follow that pattern.
+Both the default public proxies and the worker URL above follow that pattern.
 
-## Failure mode
+## Failure Mode
 
-If the proxy is unreachable, returns a non-200, or returns an unexpected
-shape, `src/routes/ticker.tsx` falls back to the local synthetic chart in
-`src/market/synth.ts`. The chart shows an amber "Synthetic" badge so the
-substitution isn't hidden.
+If the proxy fails, returns a non-200 response, times out, or returns an unexpected JSON shape, the ticker chart falls back to `src/market/synth.ts`. The chart shows a synthetic-data badge so the substitution is visible.

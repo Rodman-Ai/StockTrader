@@ -1,217 +1,127 @@
 # Architecture
 
-This document explains the moving parts in `src/`: how data flows, how orders are simulated, how replay works, and how the provider layer is decoupled.
+Reviewed on 2026-05-06. This document describes the current app shape, data flow, order lifecycle, replay flow, and operational limits.
 
-## Module map
+## System Map
 
-```
-        ┌─────────────┐                ┌────────────────────────┐
-        │  Finnhub    │                │  Yahoo Finance         │
-        │  WS + REST  │                │  /v8/finance/chart     │  (via CORS proxy)
-        └──────┬──────┘                └──────────┬─────────────┘
-               │                                  │
-               │ live ticks +                     │ historical bars
-               │ /quote                           │ (range or window)
-               ▼                                  ▼
-   ┌─────────────────────────┐      ┌────────────────────────────┐
-   │ src/market/finnhub.ts   │      │ src/market/yahoo.ts        │
-   │ FinnhubProvider         │      │ fetchYahooByRange/Window   │
-   └────────────┬────────────┘      └──────────┬─────────────────┘
-                │                              │
-                │                              │  (on error → fall back to)
-                │                              ▼
-                │                   ┌────────────────────────────┐
-                │                   │ src/market/synth.ts        │
-                │                   │ synthesizeCandles()        │
-                │                   └──────────┬─────────────────┘
-                │                              │
-                │   ┌───────────────────┐      │
-                │   │ src/replay/engine │◄─────┘ (1-minute window
-                │   │ setInterval ticks │         from Yahoo)
-                │   └─────────┬─────────┘
-                ▼             ▼
-      ┌──────────────────────────────────────────────────┐
-      │ src/hooks/useMarketStream.ts                     │
-      │ (drops live ticks while replay is active)        │
-      └────────────────────┬─────────────────────────────┘
-                           ▼
-        ┌──────────────────────────────────────────────────────┐
-        │ src/store/useMarket.ts        (in-memory)            │
-        │ { quotes: { [sym]: { price, prevClose, ts } } }      │
-        └────────────────────┬─────────────────────────────────┘
-                             ▼
-       ┌─────────────────────────────────────────┐
-       │ Per-tick fan-out:                       │
-       │  - useMarket.setTick / setReplayTick    │
-       │  - usePortfolio.onTick(prices, sim?)    │  ← runs limit-fill loop
-       └────────────────────┬────────────────────┘
-                            ▼
-       ┌────────────────────────────────────────┐
-       │ src/store/usePortfolio.ts              │  ← persisted to localStorage
-       │ submitOrder / cancelOrder / onTick     │
-       │   ↓ delegates to                       │
-       │ src/broker/engine.ts                   │  ← pure functions
-       │   placeOrder, tryFillOpenOrders        │
-       └────────────────────────────────────────┘
+```mermaid
+flowchart LR
+  Finnhub["Finnhub WS + REST"] --> Provider["src/market/finnhub.ts"]
+  Yahoo["Yahoo chart endpoint"] --> Proxy["CORS proxy"]
+  Proxy --> YahooAdapter["src/market/yahoo.ts"]
+  YahooAdapter --> Synth["src/market/synth.ts fallback"]
+  Provider --> Stream["src/hooks/useMarketStream.ts"]
+  Stream --> MarketStore["src/store/useMarket.ts"]
+  Replay["src/replay/engine.ts"] --> MarketStore
+  MarketStore --> UI["Routes + components"]
+  Stream --> PortfolioStore["src/store/usePortfolio.ts"]
+  Replay --> PortfolioStore
+  PortfolioStore --> Broker["src/broker/engine.ts + portfolio.ts"]
 ```
 
-## Provider abstraction
+## Provider Boundary
 
-`src/market/provider.ts` defines a small `MarketDataProvider` interface:
+`src/market/provider.ts` defines the app-facing market data interface. `src/market/finnhub.ts` is the current provider and exposes:
 
-```ts
-interface MarketDataProvider {
-  connect(): Promise<void>;
-  disconnect(): void;
-  subscribe(symbol: string): void;
-  unsubscribe(symbol: string): void;
-  onTick(handler: TickHandler): () => void;
-  getQuote(symbol): Promise<Quote>;
-  getCandles(symbol, from, to, resolution): Promise<Candle[]>;
-  getProfile(symbol): Promise<Profile>;
-}
-```
+- `connect()` / `disconnect()` for the WebSocket lifecycle.
+- `subscribe(symbol)` / `unsubscribe(symbol)` for live trade ticks.
+- `onTick(handler)` for fan-out to app stores.
+- REST methods for quotes, candles, profiles, metrics, and news.
 
-`src/market/finnhub.ts` is the only implementation today (`FinnhubProvider`). To swap in Alpaca or Polygon, add a class implementing the interface and change the singleton in `getProvider()`. Nothing downstream needs to change.
+The provider keeps a single WebSocket, tracks subscribed symbols, dedupes subscriptions, reduces Finnhub batches to the latest tick per symbol, and reconnects on close. The rest of the app talks to the provider interface instead of binding directly to Finnhub protocol details.
 
-The Finnhub adapter:
-- Maintains a single WebSocket and re-subscribes everything on reconnect.
-- Dedupes per-symbol `subscribed` set so multiple consumers (a route hook plus the global stream) don't double-subscribe to the WebSocket.
-- Reduces incoming `data[]` batches to "latest tick per symbol" before fanning out.
-- Reconnects with a 3s delay on close.
+## Market Data Flow
 
-## Order lifecycle
+Live mode:
 
-Pure logic lives in `src/broker/engine.ts` and operates on `Portfolio` snapshots. There is no mutation outside the Zustand `set()` call.
+1. Route/component subscription hooks call `useSubscribeSymbol` or `useSubscribeMany`.
+2. The provider subscribes to Finnhub and seeds stale/missing quotes with REST `/quote`.
+3. `useMarketStream` receives ticks, ignores them while replay is active, writes `useMarket.setTick`, and calls `usePortfolio.onTick`.
+4. `usePortfolio.onTick` calls `tryFillOpenOrders` with the latest known prices.
 
-### `placeOrder(portfolio, input, lastPrice, now)`
+Replay mode:
 
-```
-                      ┌── insufficient cash → reject (buy)
-input ──→ validate ───┤── insufficient shares → reject (sell)
-                      └── ok
-                          │
-              ┌───────────┼───────────┐
-       market │           │  limit    │
-              ▼           ▼           ▼
-         apply        crossed?    rest in
-         slippage      ─yes─→      openOrders
-              │           │
-              ▼           ▼
-        fill at      fill at
-        slipped       limit
-        price         price
-              │           │
-              └─────┬─────┘
-                    ▼
-              return Trade
-```
+1. `ReplayDialog` starts `replayEngine` with a date, speed, and initial symbols.
+2. The engine fetches 1-minute Yahoo candles for held/watchlist/subscribed symbols.
+3. It emits each candle close as a replay tick through `useMarket.setReplayTick`.
+4. It calls `usePortfolio.onTick(prices, simNow)` so fills and trade history use the simulated timestamp.
+5. Live WebSocket ticks are gated until replay stops.
 
-- **Slippage**: market orders fill at `last ± 2 bps` (defined by `SLIPPAGE_BPS` in `engine.ts`). Limit orders that cross immediately fill at the limit price (more advantageous), matching real-broker convention.
-- **Resting limits**: `tryFillOpenOrders(portfolio, prices, now)` is called on every tick from the live stream and the replay engine. It walks each open order, checks `canCrossLimit(side, limit, last)`, and applies the resulting trade.
-- **Determinism**: the engine is a set of pure functions; `engine.test.ts` covers buy/sell math, both insufficiency paths, weighted-average cost on add-ons, position removal on full sell, and limit-cross fill semantics.
+Yahoo chart fetches use a configurable CORS proxy. If Yahoo or the proxy fails, `src/routes/ticker.tsx` uses deterministic synthetic candles and shows a synthetic-data badge.
 
-### Why `now` is threaded
+## Order Lifecycle
 
-`placeOrder` and `tryFillOpenOrders` accept an explicit `now` parameter. In live mode this is `Date.now()`; in replay it is the simulated clock. This means:
+Order logic is pure and lives in `src/broker/engine.ts`; portfolio mutation happens only when the Zustand store accepts the returned snapshot.
 
-- Trade timestamps in history reflect the right time (real now or historical replay time).
-- Tests can pass deterministic timestamps.
+`placeOrder(portfolio, input, lastPrice, now)` validates:
 
-## State stores
+- Symbol presence.
+- Positive finite quantity.
+- Positive finite live price.
+- Required limit/stop prices by order type.
+- Cash for buys and shares for sells.
+- Time-in-force behavior for DAY, GTC, IOC, and FOK.
 
-Four Zustand stores, two persisted, two transient:
+Fill behavior:
 
-| Store | Persisted? | Holds |
-|---|---|---|
-| `useMarket` | no | Per-symbol live quote `{ price, prevClose, ts }`. |
-| `usePortfolio` | yes (localStorage) | `seedVersion`, `Portfolio` (cash, positions, history, openOrders). |
-| `useWatchlist` | yes | User's symbol list. |
-| `useReplay` | no (intentional) | Replay mode, date, speed, sim clock, error. |
+- Market orders fill immediately at last price plus or minus 2 bps of simulated slippage.
+- Marketable buy limits fill at `min(last, limit)`.
+- Marketable sell limits fill at `max(last, limit)`.
+- Resting limits and triggered stop-limits use the same better-price rule in `tryFillOpenOrders`.
+- Stop-market orders trigger when the stop condition crosses and then fill with market slippage.
+- DAY orders expire on the next calendar day.
 
-`usePortfolio.submitOrder` consults `useReplay` to choose the right `now` so trades placed during replay get the historical timestamp. This is the only cross-store dependency.
+`now` is threaded through placement and fill calls so live mode uses wall-clock time and replay mode uses simulated market time.
 
-## Replay engine
+## State Stores
 
-`src/replay/engine.ts` exports a module-scoped singleton, `replayEngine`. The shape:
+| Store | Persisted | Purpose |
+|---|---:|---|
+| `useMarket` | No | Current quote map, quote seeding, live ticks, replay ticks. |
+| `usePortfolio` | Yes | Cash, positions, history, open orders, broker integration. |
+| `useWatchlist` | Yes | Editable symbol list. |
+| `useEquityHistory` | Yes | Daily equity snapshots and synthetic seed curve. |
+| `useReplay` | No | Replay mode, speed, simulated clock, and errors. |
 
-```
-start(date, speed, initialSymbols)
-  ↓
-  bounds = etMarketBounds(date)         // 9:30 → 16:00 ET, EDT/EST aware
-  clockAt = bounds.open
-  startedAt = wall clock
-  mode = 'loading'
-  preload all subRefs.keys() (Promise.all)
-  mode = 'playing'
-  setInterval(tick, 200ms)
+Persisted state is local to the browser. There is no backend account or broker integration.
 
-simNow()
-  if mode != 'playing' → clockAt
-  else → min(clockAt + (now - startedAt) * speed, bounds.close)
+## Routing And Deploy
 
-tick()
-  for each sym in subRefs.keys():
-    while candles[cursor].t <= simNow:
-      useMarket.setReplayTick(sym, candle.c, prevClose, candle.t)
-      cursor++
-  if any advanced: portfolio.onTick(prices, simNow)
-  useReplay.setClock(simNow)
-  if simNow >= close: mode = 'ended', clear interval
-```
+The app uses `HashRouter`. URLs look like `/#/ticker/AAPL`, which avoids GitHub Pages 404s for deep links.
 
-### Why setReplayTick exists
-
-`useMarket.setTick` (the live path) drops out-of-order ticks via `existing.ts >= ts`. Replay ticks have historical timestamps, so they would be dropped. `setReplayTick` writes unconditionally and also lets the engine seed `prevClose` from the day's first candle. The dialog calls `useMarket.clearAll()` before starting replay so no stale live quotes leak through.
-
-### Live-tick gating
-
-`useMarketStream.ts` checks `replayEngine.isActive()` inside the WS handler and short-circuits while replay is on. The subscribe hooks (`useSubscribeSymbol`, `useSubscribeMany`) take a different path entirely while replay is active — they call `replayEngine.subscribe(...)` instead of the WS provider.
-
-When replay stops, the subscribe effects re-run, the live provider re-subscribes, and a fresh `getQuote()` repopulates `useMarket`.
-
-### Race-condition guard
-
-Subscribers are reference-counted in `subRefs: Map<string, number>`, so a route hook subscribing to a symbol that's already in the watchlist set doesn't lose ticks when the route unmounts. `preload()` checks `if (!this.subRefs.has(symbol)) return;` after the candle fetch resolves so a `start()` called twice rapidly doesn't leak stale data into the second call's freshly-cleared maps.
-
-## Routing
-
-`HashRouter` (not BrowserRouter). URLs look like `/#/ticker/AAPL`. This matters because GitHub Pages is a static host that always returns `index.html` for `/StockTrader/` but 404s for `/StockTrader/ticker/AAPL`. Hash-based routes never hit the server's path resolver, so deep links work without a 404 fallback page.
-
-`vite.config.ts` reads `process.env.BASE_PATH` so local dev uses `/` and the GH Pages build uses `/StockTrader/`. The workflow sets `BASE_PATH: /${{ github.event.repository.name }}/`.
+`vite.config.ts` reads `BASE_PATH` for static asset paths. Local development defaults to `/`; the GitHub Pages workflow sets it to `/StockTrader/`. The PWA manifest uses relative `start_url` and `scope`, and the SVG favicon is the only manifest icon today.
 
 ## Testing
 
-| File | Covers |
+Current baseline: 8 test files, 71 passing tests.
+
+| File | Coverage |
 |---|---|
-| `src/broker/engine.test.ts` | Slippage, market and limit fills, insufficiency rejections, applyTrade math, resting limit fills via `tryFillOpenOrders`. |
-| `src/market/ranges.test.ts` | Range-key → resolution and lookback mapping. |
-| `src/market/synth.test.ts` | Synthetic candle generator: anchoring, OHLC invariants, determinism, per-symbol distinctness. |
-| `src/market/yahoo.test.ts` | Yahoo Finance response parser: valid response, halt-bar nulls, missing/empty results. |
-| `src/utils/et-bounds.test.ts` | EDT and EST market-bounds correctness, last-weekday helper. |
-| `src/utils/indicators.test.ts` | SMA: window math, undersized input, identity for period=1, long monotonic series. |
+| `src/broker/engine.test.ts` | Market fills, slippage, limit/stop/stop-limit behavior, TIF handling, insufficient cash/shares, open-order fills. |
+| `src/market/ranges.test.ts` | Range-to-resolution and lookback mapping. |
+| `src/market/synth.test.ts` | Synthetic candle determinism and OHLC invariants. |
+| `src/market/yahoo.test.ts` | Yahoo response parsing and malformed/empty data handling. |
+| `src/routes/transact-helpers.test.ts` | Trade-universe construction and selected-symbol reconciliation. |
+| `src/utils/et-bounds.test.ts` | US Eastern market bounds in EDT and EST. |
+| `src/utils/indicators.test.ts` | SMA window math and edge cases. |
+| `src/utils/stats.test.ts` | Drawdown and realized P/L statistics. |
 
-Total: **57 tests** at the time of writing (broker engine, drawdown + realized P/L stats, range mapping, indicators, ET market bounds, synthetic candles, Yahoo response parsers). Component-level tests are deferred — the surface is small and primarily integrative.
+Recommended verification for documentation-only changes:
 
-## Known limitations
+```bash
+npm.cmd test
+npm.cmd run typecheck
+npm.cmd audit --json
+npm.cmd run build
+$env:BASE_PATH='/StockTrader/'; npm.cmd run build
+```
 
-- **Bundle size**: ticker chunk is ~207 kB (~67 kB gzipped) after Stats + News panels. Most of the remaining weight is React + lightweight-charts + our own code.
-- **Chart history comes from Yahoo Finance**, not Finnhub. Finnhub's `/stock/candle` is premium-only as of recent policy changes; Yahoo's `query1.finance.yahoo.com/v8/finance/chart` is free, undocumented, and CORS-blocked from the browser. We fetch through a configurable CORS proxy (`VITE_CORS_PROXY`, default `api.allorigins.win`). When Yahoo / the proxy fails, `src/routes/ticker.tsx` falls back to `synthesizeCandles()` from `src/market/synth.ts` — a deterministic per-symbol log-normal walk anchored to the live price. The chart shows an amber "Synthetic" badge so the substitution isn't hidden. See `docs/CORS-WORKER.md` for the recommended Cloudflare Worker setup. Replay mode also fetches via Yahoo; older replay dates (>~7 days) may have no 1-minute data and replay will be empty for those days.
-- **Single global provider singleton** — fine for one demo user; would need scoping if we ever multi-tenant.
-- **Replay state is intentionally transient** — a page reload returns to live mode. Adding `persist` would be a few lines if needed.
-- **Dependency advisories**: `npm audit` reports 9 vulnerabilities (5 moderate, 4 high) at the time of writing. All advisories are in **dev-only dependencies** — `vite`, `vitest`, `esbuild`, and the `vite-plugin-pwa` → `workbox-build` → `@rollup/plugin-terser` → `serialize-javascript` chain. None of this code ships in the production bundle to users. Every fix path is a semver-major upgrade (Vite 5 → 8, Vitest 2 → 4, vite-plugin-pwa to 1.2), so they're held off the auto-fix path; bump them deliberately when ready.
+## Current Limits
 
-## Adding a new feature
-
-Most features land in well-understood spots. Quick reference:
-
-| Want to add… | Touch |
-|---|---|
-| New chart indicator | `src/components/Chart.tsx`. |
-| New order type | `src/broker/engine.ts` (logic) + `src/components/OrderTicket.tsx` (UI). |
-| New portfolio analytic | `src/broker/portfolio.ts` (math) + `src/routes/portfolio.tsx` (display). |
-| Additional data provider | `src/market/<name>.ts` implementing `MarketDataProvider`, plus a switch in `getProvider()`. |
-| Another route | `src/routes/<name>.tsx`, register in `src/App.tsx`. |
-| Persisted state | New Zustand store with `persist` middleware in `src/store/`. |
-
-For larger work, the full backlog is in [`ROADMAP.md`](ROADMAP.md).
+- Historical chart and replay data depend on Yahoo's undocumented endpoint and a proxy.
+- Public CORS proxies can rate-limit or fail; use the Cloudflare Worker for reliable demos.
+- Free Finnhub keys are rate-limited and embedded in the public client bundle.
+- There is one provider singleton, which is fine for a local demo but not a multi-tenant service.
+- Replay state is intentionally transient and resets to live mode on reload.
+- Component/browser smoke coverage is still missing; see `docs/BUGS.md` and `docs/UX_UI_REVIEW.md`.
+- `npm audit --json` is currently clean on the reviewed dependency set.

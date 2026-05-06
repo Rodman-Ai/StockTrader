@@ -1,107 +1,70 @@
 # StockTrader
 
-A paper-trading **demo** that runs on desktop and mobile. Realtime US equity quotes, simulated market and limit orders, a synthetic $100,000 portfolio, and a time-travel replay mode that streams a historical day's 1-minute bars as if they were live.
+StockTrader is a client-only paper-trading demo for desktop and mobile. It combines realtime US equity quotes, simulated order handling, persisted demo state, portfolio analytics, and a time-travel replay mode that streams historical 1-minute candles as if they were live ticks.
 
-> **Simulated trading — no real money. Not investment advice.**
+> Simulated trading only. No real money. Not investment advice.
 
 **Live demo:** https://rodman-ai.github.io/StockTrader/
 
----
+## Review Artifacts
 
-## Features
+The current systemic review is tracked in durable docs:
 
-### Landing page
-- Marketing-style hero at `/` with the logo, tagline, "Open the demo" CTA, and stat tiles (test count, no backend, bundle size, PWA).
-- Feature cards highlighting the realtime stream, time-travel replay, pro charting, portfolio analytics, multi-source data, and the pure-functional broker engine.
-- Tech-stack badges and an honesty-surface paragraph about the data sources.
+- [Bug ledger](docs/BUGS.md)
+- [Feature backlog](docs/FEATURE_BACKLOG.md)
+- [UX/UI review](docs/UX_UI_REVIEW.md)
+- [Competitive analysis](docs/COMPETITIVE_ANALYSIS.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Yahoo CORS Worker setup](docs/CORS-WORKER.md)
 
-### Live ticker tape
-- CNBC-style scrolling marquee at the bottom of every in-app page with live quotes for the major US ETFs and most-watched names. Hover to pause, click any symbol to jump to its detail page.
+## Current Capabilities
 
 ### Trading
-- **Live quotes** via Finnhub's realtime trade WebSocket (US exchanges).
-- **Market, Limit, Stop, and Stop-Limit** order types with a 4-segment toggle.
-- **Time in force**: Day, GTC, IOC, FOK — IOC/FOK reject if not immediately marketable; DAY orders auto-cancel on the next trading day.
-- Marketable limits fill at the better of last-or-limit (not at the limit price), matching real-broker convention.
-- Stop orders show a "Pending trigger" pill until the price crosses, then arm and fill.
-- **Preview-then-confirm** on every order with explicit cost/share/cash readouts.
-- **OpenOrdersFeed** with status pills (Working / Pending trigger / Triggered) and live distance-to-trigger updates as ticks arrive.
-- One-click cancel on every working or pending order.
-- Insufficient-cash and insufficient-shares guards block submission with a clear reason.
+
+- Live trade ticks and REST quotes from Finnhub.
+- Market, limit, stop, and stop-limit orders.
+- Time in force: DAY, GTC, IOC, and FOK.
+- Marketable limit orders fill at the better crossed price, bounded by the limit.
+- Market orders apply 2 bps of simulated slippage.
+- Stop orders show pending/triggered state and fill through the same deterministic broker engine.
+- Preview-then-confirm order flow with cash, quantity, and cost readouts.
+- Open-orders feed with cancel controls and live distance-to-trigger updates.
 
 ### Portfolio
-- Total equity, cash, positions value, and unrealized P/L tiles.
-- Positions table with live mark-to-market value and per-position P/L (% and $).
-- **Synthetic seed** on first run: $100k cash, 5 backdated holdings, ~20 prior trades.
-- Trade history with timestamps; reset button to restore the seed.
-- Persisted across reloads via Zustand's `localStorage` middleware.
 
-### Watchlist
-- Editable sidebar list, persisted locally.
-- Add tickers via the input at the top; remove via hover-to-reveal × per row.
-- Live-quote display with 1-day % change.
+- Synthetic first-run account: $100,000 cash, seed positions, trade history, and watchlist.
+- Persisted portfolio, watchlist, and equity-history state through Zustand localStorage stores.
+- Total equity, cash, positions value, unrealized P/L, realized P/L, win rate, average win/loss, and profit factor.
+- Equity curve with SPY benchmark overlay, drawdown pane, allocation donuts, sector exposure, and position sparklines.
+- Activity tab reset restores portfolio, watchlist, and equity-history demo state.
 
-### Charting
-- TradingView's `lightweight-charts` with **line and candlestick** views (toggle in the chart toolbar).
-- **Time-range pills** (1D / 1W / 1M / 3M / 1Y / 5Y), each mapped to an appropriate Yahoo candle interval (5m/30m/1d/1wk).
-- **Volume bars** below the price, color-coded green/red by candle direction.
-- **Toggleable SMA(20/50/200)** overlays in distinct colors.
-- Live last-tick is appended to the historical series (line view) or merged into the in-progress candle (candle view) so the chart "ticks" in real time.
-- Magnet crosshair, pinch-zoom, scrollable timeline.
+### Markets And Research
 
-### Quote header
-- Current price, change, change %.
-- **Day range and open** (today's high/low/open from Finnhub `/quote`).
-- **52-week range bar** with a marker for where the current price sits between the 52w low and high.
-- "Stale" pill when no tick has arrived in 60+ seconds.
+- Editable watchlist with live quotes.
+- Research tab with symbol search, US ETF index strip, top gainers/losers, and aggregate news.
+- Ticker detail page with quote header, chart, order ticket, key stats, company profile, and recent news.
+- Quote header shows day range, open, previous close, 52-week range, and stale-data state.
 
-### Research panels
-- **Key stats** under the chart: P/E (TTM), EPS (TTM), market cap, dividend yield, 52-week high/low, beta, P/S, P/B, 10-day average volume, current volume vs 10-day average.
-- **Company profile strip**: exchange, country, IPO date, website link.
-- **Recent news** panel: last 14 days of headlines (up to 12) from Finnhub `/company-news`, with thumbnail, source, relative timestamp, and external link.
+### Charting And Replay
 
-### Portfolio analytics
-- **Equity curve** of total account value over time (synthetic backfill on first run, real snapshots from there forward), with **SPY benchmark overlay** normalized to your starting equity.
-- **Drawdown sub-pane** below the equity curve plus tiles for max drawdown, current drawdown, and drawdown duration.
-- **Allocation donuts** — by holding and by sector, side by side.
-- **Sector exposure** stacked bar with a labeled legend.
-- **Positions table** gets a 30-day **sparkline** column per holding.
+- TradingView `lightweight-charts` line and candlestick chart modes.
+- Time ranges: 1D, 1W, 1M, 3M, 1Y, and 5Y.
+- Volume bars and SMA(20/50/200) overlays.
+- Historical candles from Yahoo Finance through a CORS proxy, with deterministic synthetic fallback.
+- Time-travel replay mode for a historical trading day at 1x, 10x, or 60x speed.
+- Replay suppresses live WebSocket ticks, timestamps trades at simulated time, and stops at the market close.
 
-### Performance stats
-- **Trade performance tiles** on the Activity page: realized P/L, win rate, average win, average loss, profit factor — derived from FIFO-matched round-trips in your trade history.
+### Cross-Platform
 
-### Time-travel replay (the headline trick)
-- Pick any historical trading day and replay it at **1× / 10× / 60×** speed.
-- The engine fetches that day's 1-minute candles for held + watchlist symbols and emits them as ticks against a simulated clock.
-- Limit orders fill against historical prices.
-- The trade history records the **historical timestamp** for orders placed during replay.
-- Live WebSocket messages are suppressed while replay is on so the simulation isn't overwritten.
-- Pause / resume / speed-switch / stop controls in a persistent bar.
-- Auto-pauses at 4 PM ET ("Day complete").
+- React 18, TypeScript, Vite, Tailwind CSS, Zustand, TanStack Query, and vite-plugin-pwa.
+- HashRouter routing so GitHub Pages deep links work without a server fallback.
+- Responsive layout with desktop watchlist rail and mobile bottom navigation.
+- PWA manifest is built relative to `BASE_PATH`, so the GitHub Pages install target stays under `/StockTrader/`.
 
-### Research tab
-- **Symbol search** with company-name and ticker matching against the seeded universe.
-- **Index strip** with sparklines for SPY / QQQ / DIA / IWM.
-- **Top gainers and losers** ranked from the seeded universe's live quotes.
-- **Aggregate news feed** — Yahoo Finance news combined across your held + watchlist symbols, sorted newest first, deduped.
+## Quick Start
 
-### Trade tab
-- **Quick-pick list** of held positions and watchlist symbols with live prices and a one-tap **+1 share** quick-buy button per row.
-- **Order ticket** bound to the picked symbol (market or limit).
-- **Open orders** with cancel.
-- Cash and open-order count tiles at the top.
-
-### Cross-platform
-- **Responsive PWA**: three-pane layout on ≥1024px, stacked + 5-tab bottom bar below (Portfolio · Research · Trade · Markets · Activity).
-- Installable on iOS/Android home screens via the manifest.
-- Dark mode by default.
-- HashRouter so deep links work on GitHub Pages without a 404 fallback.
-
----
-
-## Quick start
-
-You'll need a free Finnhub API key from https://finnhub.io/dashboard.
+You need a free Finnhub API key from https://finnhub.io/dashboard.
 
 ```bash
 npm install
@@ -112,183 +75,67 @@ npm run dev
 
 Open http://localhost:5173.
 
-### Scripts
+## Scripts
 
-| Script | What it does |
+| Script | Purpose |
 |---|---|
-| `npm run dev` | Vite dev server with HMR. |
-| `npm run build` | Production build to `dist/`. Honors `BASE_PATH` env. |
-| `npm run preview` | Serve the production build. |
-| `npm test` | Run Vitest unit tests (broker engine, ranges, ET bounds). |
-| `npm run typecheck` | TypeScript only, no emit. |
+| `npm run dev` | Start the Vite dev server. |
+| `npm run build` | Type-check and build production assets to `dist/`. Honors `BASE_PATH`. |
+| `npm run preview` | Serve the production build locally. |
+| `npm test` | Run the Vitest unit suite. Current baseline: 71 passing tests. |
+| `npm run typecheck` | Run TypeScript without emitting files. |
 
----
+## Project Layout
 
-## Stack
-
-| Layer | Choice | Why |
-|---|---|---|
-| Build | **Vite** | Fast HMR, no SSR needed (everything is client-side). |
-| UI | **React 18 + TypeScript** | Industry standard. |
-| Styling | **Tailwind CSS** | Utility classes, dark theme, `lg:` breakpoint at 1024px. |
-| Routing | **react-router-dom** with `HashRouter` | Deep links work on GH Pages without a 404 page. |
-| State | **Zustand** with `persist` | Tiny API, idiomatic React, free localStorage. |
-| Data fetching | **TanStack Query** | Cache + retry for REST candle/profile. |
-| Charts | **lightweight-charts** (TradingView) | True candlesticks, sub-200 KB gzipped, fast even with 1-min replay data. |
-| PWA | **vite-plugin-pwa** | Manifest + service worker. |
-
-No backend. The "broker" is a deterministic local module in `src/broker/`.
-
----
-
-## Project layout
-
-```
+```text
 src/
-  main.tsx                  # entry
-  App.tsx                   # router + StreamBoot
-
-  market/
-    provider.ts             # MarketDataProvider interface
-    finnhub.ts              # adapter: WebSocket + REST quote/candle/profile
-    ranges.ts               # 1D…5Y → resolution + lookback
-    symbols.ts              # seeded universe + name lookup
-
-  broker/
-    types.ts                # Order, Trade, Position, Portfolio
-    engine.ts               # placeOrder, tryFillOpenOrders, slippage
-    portfolio.ts            # applyTrade, position math, equity calc
-    seed.ts                 # synthetic starting state
-
-  store/
-    useMarket.ts            # in-memory live quotes (+ replay ticks)
-    usePortfolio.ts         # persisted: cash, positions, history, openOrders
-    useWatchlist.ts         # persisted: editable symbol list
-    useEquityHistory.ts     # persisted: daily equity snapshots
-    useReplay.ts            # transient: replay mode + sim clock
-
-  replay/
-    engine.ts               # singleton: candle fetch + interval-driven ticks
-
-  hooks/
-    useMarketStream.ts      # boots WS, gates on replay mode
-
-  components/
-    AppShell.tsx            # responsive layout, header, replay button
-    BottomTabs.tsx          # mobile tab bar (5 tabs)
-    Chart.tsx               # lightweight-charts area + candles + volume + SMAs + range pills
-    QuoteHeader.tsx         # symbol, price, change/%, day range, 52w range bar
-    OrderTicket.tsx         # buy/sell, market/limit, preview modal
-    PositionsTable.tsx      # holdings table with 30D sparkline column
-    ActivityList.tsx
-    Watchlist.tsx           # editable, with add/remove
-    PaperBadge.tsx          # green "REALTIME" chip; flips to blue "REPLAY" during time-travel
-    ReplayBar.tsx           # persistent control strip
-    ReplayDialog.tsx        # date + speed picker
-    StatsPanel.tsx          # P/E, EPS, mkt cap, div yield, 52w hi/lo, etc.
-    NewsPanel.tsx           # per-ticker news (Yahoo first, Finnhub fallback)
-    EquityCurve.tsx         # equity curve + SPY overlay + drawdown pane
-    AllocationDonut.tsx     # SVG donut for holding/sector allocation
-    SectorBars.tsx          # stacked sector exposure bar
-    RangeBar.tsx            # 52w range track for QuoteHeader
-    Sparkline.tsx           # 30D inline sparkline used in tables
-    PerformanceTiles.tsx    # realized P/L + win rate stats on Activity
-    SymbolSearch.tsx        # ticker/company search input
-    IndexStrip.tsx          # SPY/QQQ/DIA/IWM with sparklines
-    MoversList.tsx          # top gainers/losers cards
-    AggregateNewsPanel.tsx  # news aggregated across watchlist + holdings
-    QuickBuyButton.tsx      # +1 share one-tap buy
-    Footer.tsx
-
-  routes/
-    portfolio.tsx           # / — equity tiles + curve + donuts + positions
-    research.tsx            # /research — search, indices, movers, news
-    transact.tsx            # /transact — pick + ticket + open orders
-    markets.tsx             # /markets — full symbol grid
-    activity.tsx            # /activity — perf tiles + open orders + history
-    ticker.tsx              # /ticker/:symbol — quote, chart, ticket, stats, news
-
-  utils/
-    format.ts               # Intl.NumberFormat helpers
-    market-hours.ts         # is US market open?
-    et-bounds.ts            # ET 9:30 / 16:00 timestamps for a date
-    indicators.ts           # sma()
-    stats.ts                # computeDrawdowns, realizedPL
-
-  styles/index.css          # Tailwind base + component classes
+  main.tsx                  entry
+  App.tsx                   router and global stream boot
+  broker/                   pure order, trade, portfolio math
+  components/               app shell, chart, ticket, tables, cards
+  hooks/                    market stream and subscription hooks
+  market/                   Finnhub, Yahoo, synthetic data, symbols, ranges
+  replay/                   historical-day replay engine
+  routes/                   landing, portfolio, research, trade, markets, activity, ticker
+  store/                    Zustand stores
+  styles/                   Tailwind base and shared classes
+  utils/                    formatting, indicators, market hours, stats
 ```
 
-Deeper architecture notes (data flow, order lifecycle, replay flow): see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for data flow, order lifecycle, replay flow, provider boundaries, and test coverage.
 
----
+## Data Honesty
 
-## Synthetic seed
+Live quotes and historical chart candles come from different sources:
 
-On first run you start with:
+- **Finnhub:** realtime trade WebSocket plus REST quote/profile/metrics/news fallbacks.
+- **Yahoo Finance:** historical chart candles through a CORS proxy.
+- **Synthetic fallback:** deterministic per-symbol candles anchored to the live price when Yahoo or the proxy fails.
 
-- **$100,000** cash
-- 50 AAPL, 20 MSFT, 15 NVDA, 30 VOO, 10 TSLA (cost basis backdated ~6 months)
-- ~20 prior trades spread over the last 90 days
-- Watchlist of 10 popular tickers
+Yahoo's chart endpoint is unofficial and CORS-blocked in browsers. The default public proxies are convenient for casual demo use but should not be treated as reliable infrastructure. For production-style demos, deploy the Cloudflare Worker in [docs/CORS-WORKER.md](docs/CORS-WORKER.md) and set `VITE_CORS_PROXY`.
 
-Reset to this state from the **Activity** tab → Reset demo.
+## GitHub Pages Deploy
 
----
+The workflow in `.github/workflows/deploy.yml` builds on pushes to `main` and publishes with GitHub Pages Actions. `BASE_PATH` is set to `/${{ github.event.repository.name }}/`, and routing uses `HashRouter`.
 
-## Data honesty
+One-time repo setup:
 
-Live quotes and historical candles come from two different sources:
+1. Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
+2. Settings -> Secrets and variables -> Actions -> New repository secret.
+3. Add `VITE_FINNHUB_KEY` with your Finnhub key.
+4. Settings -> Environments -> github-pages -> allow the branch or all branches.
+5. Push to `main` or run the workflow manually.
 
-- **Live tick / quote: Finnhub** (free tier, realtime trade WebSocket + `/quote` REST).
-- **Historical chart bars: Yahoo Finance** (`query1.finance.yahoo.com/v8/finance/chart`) via a CORS proxy. No API key. Used by both the chart's range pills and replay mode's 1-minute history.
-- **Fallback: synthetic chart** in `src/market/synth.ts` — a deterministic per-symbol log-normal walk anchored to the live price. Triggered when Yahoo / the proxy is unreachable. A small amber "Synthetic" badge makes the substitution obvious.
-
-True consolidated NASDAQ/NYSE SIP data requires paid exchange agreements ($50–$200/mo). Finnhub's free WebSocket is adequate for the demo's live tick, and Yahoo's chart endpoint is widely used (though unofficial — they can change it without notice).
-
-### CORS proxy
-
-Yahoo doesn't send CORS headers, so the browser can't call it directly. The app routes through a small proxy that forwards the request server-side.
-
-- **Default**: tries two free public proxies in sequence — `api.allorigins.win` first, then `api.codetabs.com` — each with an 8-second timeout before falling through to the synthetic chart fallback. Good enough for casual use; not for anything that depends on shared infrastructure being up.
-- **Recommended for production**: deploy a Cloudflare Worker (free tier, 100k req/day, no credit card). 15-line worker source + deploy steps in [`docs/CORS-WORKER.md`](docs/CORS-WORKER.md). Set `VITE_CORS_PROXY` to your worker URL — when set, only that proxy is used (no public fallback).
-
-The footer always shows the data source and a "simulated trading" disclaimer. Quote staleness ≥60s is surfaced on the quote header. The `MarketDataProvider` interface in `src/market/provider.ts` makes it possible to swap to Alpaca, Polygon, or a different provider entirely without touching the rest of the app.
-
----
-
-## Deploying to GitHub Pages
-
-The repo ships `.github/workflows/deploy.yml`, which builds and publishes to GitHub Pages on every push to `main` or the active feature branch. Routing uses `HashRouter` so deep links survive direct loads. Vite's `base` is read from `BASE_PATH` (set to `/StockTrader/` by the workflow).
-
-**One-time repo setup:**
-
-1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
-2. **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `VITE_FINNHUB_KEY`
-   - Value: your Finnhub API key
-3. **Settings → Environments → github-pages → Deployment branches and tags** — allow the branches you want to deploy from (or "All branches").
-4. Push, or trigger manually from the Actions tab.
-
-Site URL: `https://<owner>.github.io/StockTrader/`.
-
-> Any `VITE_*` env var is embedded into the public client bundle. Finnhub free-tier keys are rate-limited and harmless if leaked, but rotate them if you ever upgrade.
-
----
+Any `VITE_*` variable is embedded in the public client bundle. Treat upgraded or paid API keys accordingly.
 
 ## Roadmap
 
-The full 100-feature roadmap (with effort estimates and competitor origins) lives in [`docs/ROADMAP.md`](docs/ROADMAP.md). Highlights of what's still on deck:
+The current backlog is split by purpose:
 
-- Stop and trailing-stop orders
-- Per-ticker news feed and fundamentals tabs
-- Stock screener, sector heatmap, earnings calendar
-- Equity-curve chart over time, allocation donut by sector
-- Push notifications for price alerts
-- Keyboard shortcuts (B/S, J/K to walk the watchlist)
-- Settings screen with theme + data-source switcher
-
----
+- [docs/ROADMAP.md](docs/ROADMAP.md) gives the product direction and recommended next picks.
+- [docs/FEATURE_BACKLOG.md](docs/FEATURE_BACKLOG.md) ranks feature opportunities by value, effort, competitive relevance, and risk.
+- [docs/BUGS.md](docs/BUGS.md) tracks active bugs and resolved review findings.
 
 ## License
 
-Demo project — no license specified. Do not use for actual trading.
+Demo project - no license specified. Do not use for actual trading.

@@ -11,8 +11,6 @@ import { TickerTape } from './TickerTape';
 import { useReplay, isReplayActive } from '@/store/useReplay';
 
 export function AppShell() {
-  const location = useLocation();
-  const isTicker = location.pathname.startsWith('/ticker/');
   const replayActive = useReplay((s) => isReplayActive(s.mode));
   const [replayOpen, setReplayOpen] = useState(false);
 
@@ -27,7 +25,7 @@ export function AppShell() {
           <PaperBadge />
         </Link>
         <div className="flex items-center gap-3">
-          <nav className="hidden lg:flex items-center gap-1 text-sm">
+          <nav className="hidden lg:flex items-center gap-1 text-sm" aria-label="Primary">
             <NavItem to="/portfolio">Portfolio</NavItem>
             <NavItem to="/research">Research</NavItem>
             <NavItem to="/transact">Trade</NavItem>
@@ -40,7 +38,7 @@ export function AppShell() {
               className="btn-ghost text-xs px-3 py-1.5"
               title="Replay a historical trading day"
             >
-              ⟳ Replay
+              Replay
             </button>
           )}
         </div>
@@ -52,9 +50,7 @@ export function AppShell() {
         <aside className="hidden lg:block border-r border-line bg-bg-elevated">
           <Watchlist />
         </aside>
-        <section
-          className={`flex flex-col ${isTicker ? 'pb-20 lg:pb-10' : 'pb-20 lg:pb-10'}`}
-        >
+        <section className="flex flex-col pb-20 lg:pb-10">
           <Outlet />
         </section>
       </main>
